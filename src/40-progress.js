@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════════
-   進度儲存與間隔複習排程
-   儲存優先序：Artifact 個人雲端儲存 → 瀏覽器本機儲存 → 記憶體
+   間隔複習排程與本次練習統計
+   全部只在記憶體中運作，不寫入任何儲存空間
    ══════════════════════════════════════════════════════════════════════ */
 var ALL_CARDS = ATTACHED.concat(NUM_CARDS, FUNC_CARDS, GEOF_CARDS, GEOP_CARDS);
 var CARD_BY_ID = {};
@@ -48,7 +48,7 @@ function emptyCard(){
     unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null};
 }
 function emptyProgress(){
-  return {version:PROGRESS_VERSION, cards:{}, recentWrong:[], sessions:[],
+  return {version:PROGRESS_VERSION, cards:{}, recentWrong:[],
     createdAt:todayStr(), updatedAt:todayStr()};
 }
 function getCP(progress, id){
@@ -214,134 +214,38 @@ function reasonStats(progress){
   }).sort(function(a, b){ return b.n - a.n; });
 }
 
-/* ── 儲存層 ─────────────────────────────────────────────────────────── */
-var Store = {
-  mode:'memory', dbRef:null, mem:null, lastError:null, timer:null,
-  readLocal:function(){
-    try {
-      var raw = window.localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch(e){ return null; }
-  },
-  writeLocal:function(data){
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); return true; }
-    catch(e){ return false; }
-  },
-  /* 先給畫面一份可用的資料，雲端稍後接上 */
-  boot:function(){
-    var local = this.readLocal();
-    this.mem = normalizeProgress(local) || emptyProgress();
-    this.mode = local ? 'local' : 'memory';
-    return this.mem;
-  },
-  connect:function(onReady){
-    var self = this;
-    if(!(window.claude && typeof window.claude.use === 'function')){
-      if(!self.readLocal()) self.mode = self.writeLocal(self.mem) ? 'local' : 'memory';
-      onReady(self.mem, self.mode, null);
-      return;
-    }
-    var settled = false;
-    var finish = function(mode, err){
-      if(settled) return; settled = true;
-      self.mode = mode; self.lastError = err || null;
-      onReady(self.mem, self.mode, self.lastError);
-    };
-    setTimeout(function(){ if(!settled) finish(self.mode === 'memory' ? 'local' : self.mode, null); }, 11000);
-    window.claude.use('db').then(function(db){
-      if(!db){ finish(self.readLocal() || self.writeLocal(self.mem) ? 'local' : 'memory', null); return; }
-      self.dbRef = db.doc(DB_PATH);
-      return self.dbRef.get().then(function(snap){
-        if(snap && snap.exists){
-          var remote = normalizeProgress(snap.data());
-          if(remote && (!self.mem || (remote.updatedAt || '') >= (self.mem.updatedAt || ''))){
-            self.mem = remote;
-            self.writeLocal(remote);
-          }
-        }
-        finish('cloud', null);
-      });
-    }).catch(function(err){
-      finish(self.writeLocal(self.mem) ? 'local' : 'memory',
-             (err && err.message) ? err.message : '雲端儲存暫時無法使用');
-    });
-  },
-  save:function(data, onStatus){
-    var self = this;
-    self.mem = data;
-    var okLocal = self.writeLocal(data);
-    if(self.timer) clearTimeout(self.timer);
-    self.timer = setTimeout(function(){
-      if(!self.dbRef){
-        if(!okLocal && self.mode !== 'memory'){
-          self.mode = 'memory'; self.lastError = '瀏覽器不允許儲存，進度只保留在這個分頁';
-          if(onStatus) onStatus(self.mode, self.lastError);
-        }
-        return;
-      }
-      self.dbRef.set(JSON.parse(JSON.stringify(data))).then(function(){
-        if(self.mode !== 'cloud'){ self.mode = 'cloud'; self.lastError = null;
-          if(onStatus) onStatus(self.mode, null); }
-      }).catch(function(err){
-        self.mode = okLocal ? 'local' : 'memory';
-        self.lastError = (err && err.code === 'quota_exceeded')
-          ? '雲端空間已滿，進度改存在本機'
-          : '雲端同步失敗，進度已存在本機';
-        if(onStatus) onStatus(self.mode, self.lastError);
-      });
-    }, 600);
-  }
-};
-var STORE_LABEL = {cloud:'個人雲端儲存', local:'本機瀏覽器儲存', memory:'僅此分頁（未儲存）'};
+/* ── 本次練習的暫存狀態 ─────────────────────────────────────────────
+   這個網站不使用任何資料儲存：進度只放在 React state（記憶體）裡，
+   重新整理或關閉分頁就會從頭開始。                                     */
+var SESSION_NOTE = '進度只保留在這個分頁，重新整理後會從頭開始。';
 
-/* 匯入時的資料清理：只保留認得的欄位，避免壞資料讓網站當掉 */
-function normalizeProgress(raw){
-  if(!raw || typeof raw !== 'object') return null;
-  var out = emptyProgress();
-  out.createdAt = typeof raw.createdAt === 'string' ? raw.createdAt : out.createdAt;
-  out.updatedAt = typeof raw.updatedAt === 'string' ? raw.updatedAt : out.updatedAt;
-  var cards = raw.cards && typeof raw.cards === 'object' ? raw.cards : {};
-  Object.keys(cards).forEach(function(id){
-    if(!CARD_BY_ID[id]) return;
-    var c = cards[id] || {}, o = emptyCard();
-    o.seen = Number(c.seen) || 0;
-    o.due = typeof c.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.due) ? c.due : null;
-    o.successDays = Array.isArray(c.successDays)
-      ? c.successDays.filter(function(d){ return typeof d === 'string'; }).slice(0, 60) : [];
-    ['recall', 'recognition', 'application'].forEach(function(k){
-      var s = c[k] || {};
-      o[k] = {c:Math.max(0, Number(s.c) || 0), t:Math.max(0, Number(s.t) || 0)};
-      if(o[k].c > o[k].t) o[k].c = o[k].t;
-    });
-    o.unsureIdx = Math.min(Math.max(0, Number(c.unsureIdx) || 0), LADDER_UNSURE.length - 1);
-    o.knownIdx = Math.min(Math.max(0, Number(c.knownIdx) || 0), LADDER_KNOWN.length - 1);
-    o.lapses = Math.max(0, Number(c.lapses) || 0);
-    o.lastResult = (c.lastResult === 'ok' || c.lastResult === 'miss') ? c.lastResult : null;
-    o.lastAt = typeof c.lastAt === 'string' ? c.lastAt : null;
-    if(c.reasons && typeof c.reasons === 'object'){
-      Object.keys(c.reasons).forEach(function(r){
-        if(REASON_LABEL[r]) o.reasons[r] = Math.max(0, Number(c.reasons[r]) || 0);
-      });
-    }
-    out.cards[id] = o;
+/* 還沒練熟的卡（含完全沒練過的），用來排出下一輪練習 */
+function pendingList(progress){
+  return ALL_CARDS.filter(function(c){
+    return !isMastered(progress.cards[c.id]);
   });
-  if(Array.isArray(raw.recentWrong)){
-    out.recentWrong = raw.recentWrong.filter(function(w){
-      return w && CARD_BY_ID[w.id] && KINDS[w.kind];
-    }).slice(0, 30).map(function(w){
-      return {id:w.id, kind:w.kind,
-        reason:REASON_LABEL[w.reason] ? w.reason : null,
-        date:typeof w.date === 'string' ? w.date : ''};
+}
+/* 本次已安排複習間隔的卡，依間隔長短排序（純粹展示間隔複習的安排） */
+function scheduleList(progress){
+  var today = todayStr();
+  return ALL_CARDS.filter(function(c){
+    var cp = progress.cards[c.id];
+    return cp && cp.due;
+  }).map(function(c){
+    return {card:c, gap:daysBetween(today, progress.cards[c.id].due)};
+  }).sort(function(a, b){ return a.gap - b.gap; });
+}
+/* 本次練習的總計（每答一題就即時更新） */
+function sessionTotals(progress){
+  var n = 0, ok = 0;
+  ALL_CARDS.forEach(function(c){
+    var cp = progress.cards[c.id];
+    if(!cp) return;
+    ['recall', 'recognition', 'application'].forEach(function(k){
+      n += cp[k].t; ok += cp[k].c;
     });
-  }
-  if(Array.isArray(raw.sessions)){
-    out.sessions = raw.sessions.filter(function(s){
-      return s && typeof s.date === 'string';
-    }).slice(-60).map(function(s){
-      return {date:s.date, n:Math.max(0, Number(s.n) || 0), ok:Math.max(0, Number(s.ok) || 0)};
-    });
-  }
-  return out;
+  });
+  return {n:n, ok:ok, pct:n ? Math.round(ok / n * 100) : null};
 }
 
 function recordReason(progress, id, reason){
@@ -351,12 +255,4 @@ function recordReason(progress, id, reason){
   if(progress.recentWrong.length && progress.recentWrong[0].id === id){
     progress.recentWrong[0].reason = reason;
   }
-}
-function recordSession(progress, n, ok){
-  var today = todayStr();
-  var last = progress.sessions[progress.sessions.length - 1];
-  if(last && last.date === today){ last.n += n; last.ok += ok; }
-  else progress.sessions.push({date:today, n:n, ok:ok});
-  progress.sessions = progress.sessions.slice(-60);
-  progress.updatedAt = today;
 }

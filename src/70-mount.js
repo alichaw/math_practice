@@ -13,7 +13,7 @@ var Boundary = (function(){
         h('main', {className:'main'},
           h('div', {className:'banner red'},
             h('span', {'aria-hidden':'true'}, '！'),
-            h('span', null, '畫面發生錯誤，已停在安全狀態。重新整理頁面即可繼續，先前存下的進度不會消失。')),
+            h('span', null, '畫面發生錯誤，已停在安全狀態。重新整理頁面即可從頭開始（本網站不保存任何資料）。')),
           h('div', {className:'btnrow'},
             h('button', {className:'btn', onClick:function(){ window.location.reload(); }},
               '重新整理'))));

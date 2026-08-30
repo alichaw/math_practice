@@ -211,17 +211,17 @@ function speak(nodes){
   return s;
 }
 
-var _cache = {};
-function parseCached(src){
-  if(!(src in _cache)) _cache[src] = parse(src);
-  return _cache[src];
+var _memo = {};
+function parseMemo(src){
+  if(!(src in _memo)) _memo[src] = parse(src);
+  return _memo[src];
 }
 
 /* 行內公式 */
 function M(props){
   var src = props.t == null ? '' : String(props.t);
   var nodes;
-  try { nodes = parseCached(src); }
+  try { nodes = parseMemo(src); }
   catch(e){ return h('span', {className:'m'}, src); }
   return h('span', {className:'m' + (props.block ? ' blk' : '') + (props.cls ? ' ' + props.cls : ''),
                     role:'math'},

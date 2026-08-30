@@ -16,20 +16,20 @@ OUT=index.html
 if(!window.React || !window.ReactDOM){
   document.getElementById('root').innerHTML =
     '<div style="padding:24px;font-family:system-ui;line-height:1.7">' +
-    '<b>元件庫載入失敗</b><br>請檢查網路連線後重新整理頁面。已存下的學習進度不會消失。</div>';
+    '<b>元件庫載入失敗</b><br>請檢查網路連線後重新整理頁面。</div>';
   return;
 }
 try {
 HTML
   cat src/10-math.js src/20-svg.js \
       src/30-data-a.js src/31-data-b.js src/32-data-c.js src/33-data-geo.js src/34-data-methods.js \
-      src/40-store.js src/50-ui.js src/60-app.js src/70-mount.js
+      src/40-progress.js src/50-ui.js src/60-app.js src/70-mount.js
   cat <<'HTML'
 } catch(err){
   var el = document.getElementById('root');
   if(el) el.innerHTML =
     '<div style="padding:24px;font-family:system-ui;line-height:1.7">' +
-    '<b>網站啟動時發生錯誤</b><br>請重新整理頁面再試一次。已存下的學習進度不會消失。</div>';
+    '<b>網站啟動時發生錯誤</b><br>請重新整理頁面再試一次。</div>';
 }
 })();
 </script>
