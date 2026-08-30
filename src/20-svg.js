@@ -152,10 +152,10 @@ function TriangleDiagram(p){
     kids.push(poly([A, B, C], 'stk', 'tri'));
     kids.push(seg(A, H, HL ? 'hl' : 'dash', 'ht'));
     kids.push(rightAngle(H, C, A, 10, 'raH'));
-    kids.push(T(150, 186, '底 b', 'acc'), T(163, 105, '高 h', 'acc', 'start'));
+    kids.push(T(150, 186, '底', 'acc'), T(163, 105, '高', 'acc', 'start'));
     kids.push(VL(A, 'A', 0, -10), VL(B, 'B', -11, 6), VL(C, 'C', 11, 6));
     title = '三角形的底與高';
-    desc = '三角形 ABC 以 BC 為底，從頂點 A 向 BC 作垂線得到高 h，垂足處有直角記號。';
+    desc = '三角形 ABC 以 BC 為底，從頂點 A 向 BC 作垂線得到高，垂足處有直角記號。';
     cap = '高一定要垂直於所取的底';
   }
   else if(v === 'inequality'){
@@ -180,11 +180,15 @@ function TriangleDiagram(p){
     kids.push.apply(kids, ticks(E2, Hq, 2, 't4'));
     kids.push.apply(kids, ticks(Hq, E3, 2, 't5'));
     kids.push(angleArc(E2, E1, E3, 20, 'thin', 'g1'), angleArc(E3, E1, E2, 20, 'thin', 'g2'));
-    kids.push(T(96, 96, 'a', 'lbl', 'end'), T(206, 96, 'a', 'lbl', 'start'), T(150, 186, 'a'));
-    kids.push(T(160, 108, 'h', 'lbl', 'start'));
-    if(RV) kids.push(T(150, 18, 'h = (√3/2)a　　面積 = (√3/4)a²', 'acc'));
+    kids.push(T(92, 96, '邊長', 'sm', 'end'), T(210, 96, '邊長', 'sm', 'start'),
+              T(150, 188, '邊長', 'sm'));
+    kids.push(T(162, 108, '高', 'acc', 'start'));
+    if(RV){
+      kids.push(T(150, 14, '高 =（√3 / 2）× 邊長', 'acc'));
+      kids.push(T(150, 28, '面積 =（√3 / 4）× 邊長²', 'acc'));
+    }
     title = '正三角形的高';
-    desc = '正三角形三邊都等於 a（同記號），從頂點作的高把底邊平分成兩段（雙記號），得到兩個 30–60–90 直角三角形。';
+    desc = '正三角形三邊等長（同記號），從頂點作的高把底邊平分成兩段（雙記號），得到兩個 30–60–90 直角三角形。';
     cap = '高把正三角形切成兩個 30°–60°–90° 直角三角形';
   }
   else {   /* bigside：大邊對大角 */
@@ -307,8 +311,8 @@ function SimilarTriangleDiagram(p){
     var H = [30, 118], H2 = [180, 178];
     kids.push(seg(A, H, HL ? 'hl' : 'dash', 'h1'), seg(A2, H2, HL ? 'hl' : 'dash', 'h2'));
     kids.push(rightAngle(H, C, A, 8, 'rh1'), rightAngle(H2, C2, A2, 10, 'rh2'));
-    kids.push(T(36, 84, 'h₁', 'acc', 'start'), T(188, 110, 'h₂', 'acc', 'start'));
-    if(RV) kids.push(T(150, 196, 'h₁ : h₂ = 邊長比 = 1 : ' + k, 'acc'));
+    kids.push(T(36, 84, '高', 'acc', 'start'), T(188, 110, '高', 'acc', 'start'));
+    if(RV) kids.push(T(150, 196, '對應高之比 = 對應邊之比 = 1 : ' + k, 'acc'));
   } else {
     kids.push(T(50, 133, '3', 'sm'), T(222, 194, String(3 * k), 'sm'));
     kids.push(T(14, 84, '2', 'sm', 'end'), T(158, 104, String(2 * k), 'sm', 'end'));
@@ -318,7 +322,7 @@ function SimilarTriangleDiagram(p){
   kids.push(T(122, 74, '∽', 'acc'));
   return h(Fig, {vb:'0 0 305 205', title:'相似三角形',
     desc:'△ABC 與 △DEF 相似，對應角相等（弧記號），對應邊成比例，' +
-         (v === 'height' ? '對應高 h₁、h₂ 的比也等於邊長比。' : '大三角形的邊長是小三角形的 ' + k + ' 倍。'),
+         (v === 'height' ? '兩條對應高的比也等於對應邊之比。' : '大三角形的邊長是小三角形的 ' + k + ' 倍。'),
     caption:v === 'height' ? '對應高之比 = 對應邊之比' : '對應頂點順序：A↔D、B↔E、C↔F'}, kids);
 }
 
@@ -378,9 +382,9 @@ function SpecialRightTriangleDiagram(p){
       className:HL ? 'hl' : 'fillT'}));
     kids.push(dot([C4[0] + rr, C4[1] - rr], 'dotT', 'ic0', 2.6));
     kids.push(rightAngle(C4, B4, A4, 12, 'ra'));
-    kids.push(T(152, 178, '兩股 a、b', 'sm'), T(50, 104, 'b', 'lbl', 'end'), T(166, 92, '斜邊 c', 'sm'));
-    kids.push(T(C4[0] + rr + 6, C4[1] - rr + 4, 'r', 'lbl', 'start'));
-    if(RV) kids.push(T(150, 26, 'r = (a + b − c) ÷ 2', 'acc'));
+    kids.push(T(152, 178, '股', 'sm'), T(50, 104, '股', 'sm', 'end'), T(166, 92, '斜邊', 'sm'));
+    kids.push(T(C4[0] + rr + 8, C4[1] - rr + 4, '半徑', 'acc', 'start'));
+    if(RV) kids.push(T(150, 26, '內切圓半徑 =（兩股和 − 斜邊）÷ 2', 'acc'));
     title = '直角三角形的內切圓'; cap = '只有直角三角形能用 r =（兩股和 − 斜邊）÷ 2';
     desc = '直角三角形與其內切圓，圓心到三邊等距，半徑為 r。';
   }
@@ -432,10 +436,10 @@ function TriangleCentersDiagram(p){
     kids.push(rightAngle(tAB, A, I, 7, 'r1'), rightAngle(tBC, B, I, 7, 'r2'), rightAngle(tAC, A, I, 7, 'r3'));
     kids.push(angleArc(A, B, I, 15, 'thin', 'g1'), angleArc(A, I, C, 15, 'thin', 'g2'));
     kids.push(dot(I, 'dotT', 'i', 3.4), T(I[0] + 7, I[1] + 13, 'I', 'lbl', 'start'));
-    kids.push(T(I[0] - 20, I[1] - 4, 'r', 'lbl', 'end'));
-    if(RV) kids.push(T(150, 192, 'I 到三邊等距＝內切圓半徑 r', 'acc'));
+    kids.push(T(I[0] - 18, I[1] - 4, '半徑', 'acc', 'end'));
+    if(RV) kids.push(T(150, 192, 'I 到三邊等距＝內切圓半徑', 'acc'));
     title = '內心與內切圓';
-    desc = '三角形三個內角平分線交於一點 I，I 到三邊的距離都等於內切圓半徑 r。';
+    desc = '三角形三個內角平分線交於一點 I，I 到三邊的距離都等於內切圓半徑。';
     cap = '內心＝三條角平分線的交點，到三邊等距';
   } else if(v === 'centroid-areas'){
     var G0 = [145.9, 100.7];
@@ -547,10 +551,10 @@ function QuadrilateralDiagram(p){
     kids.push(rightAngle(Hf, pts[3], pts[1], 10, 'ra'));
     kids.push.apply(kids, chevrons(pts[0], pts[1], 1, 'c1'));
     kids.push.apply(kids, chevrons(pts[3], pts[2], 1, 'c2'));
-    kids.push(T(121, 174, '底 b', 'acc'), T(106, 106, '高 h', 'acc', 'start'));
-    if(RV) kids.push(T(150, 34, '面積 = b × h', 'acc'));
+    kids.push(T(121, 174, '底', 'acc'), T(106, 106, '高', 'acc', 'start'));
+    if(RV) kids.push(T(150, 34, '面積 = 底 × 高', 'acc'));
     title = '平行四邊形的底與高'; cap = '高必須垂直於底，不是斜邊';
-    desc = '平行四邊形以下底為 b，從上底頂點向下底作垂線得到高 h，垂足有直角記號。';
+    desc = '平行四邊形以下方那一邊為底，從上方頂點向底作垂線得到高，垂足有直角記號。';
   } else if(v === 'trapezoid-area'){
     pts = [[92, 50], [206, 50], [262, 156], [38, 156]];
     var Hf2 = [92, 156];
@@ -559,10 +563,10 @@ function QuadrilateralDiagram(p){
     kids.push(rightAngle(Hf2, pts[2], pts[0], 10, 'ra'));
     kids.push.apply(kids, chevrons(pts[0], pts[1], 1, 'c1'));
     kids.push.apply(kids, chevrons(pts[3], pts[2], 1, 'c2'));
-    kids.push(T(149, 42, '上底 a', 'acc'), T(150, 174, '下底 b', 'acc'), T(102, 106, '高 h', 'acc', 'start'));
-    if(RV) kids.push(T(150, 26, '面積 = ½ × (a + b) × h', 'acc'));
+    kids.push(T(149, 42, '上底', 'acc'), T(150, 174, '下底', 'acc'), T(102, 106, '高', 'acc', 'start'));
+    if(RV) kids.push(T(150, 26, '面積 =（上底 ＋ 下底）× 高 ÷ 2', 'acc'));
     title = '梯形的兩底與高'; cap = '兩底是互相平行的那一組對邊';
-    desc = '梯形上底 a 與下底 b 互相平行（箭頭記號），兩底之間的垂直距離為高 h。';
+    desc = '梯形的上底與下底互相平行（箭頭記號），兩底之間的垂直距離就是高。';
   } else if(v === 'polygon-angles' || v === 'regular-polygon'){
     var cen = [150, 106], Rp = 78, pn = [];
     for(var t = 0; t < 5; t++) pn.push(polar(cen[0], cen[1], Rp, 90 + t * 72));
@@ -602,9 +606,9 @@ function QuadrilateralDiagram(p){
     kids.push.apply(kids, chevrons(pts[0], pts[1], 1, 'c1'));
     kids.push.apply(kids, chevrons(M, N, 1, 'c2'));
     kids.push.apply(kids, chevrons(pts[3], pts[2], 1, 'c3'));
-    kids.push(T(150, 40, '上底 a', 'sm'), T(150, 168, '下底 b', 'sm'), T(150, 94, '中位線', 'acc'));
+    kids.push(T(150, 40, '上底', 'sm'), T(150, 168, '下底', 'sm'), T(150, 94, '中位線', 'acc'));
     kids.push(VL(pts[0], 'A', -6, -10), VL(pts[1], 'B', 6, -10), VL(pts[2], 'C', 11, 8), VL(pts[3], 'D', -11, 8));
-    if(RV) kids.push(T(150, 188, '中位線 = (a + b) ÷ 2', 'acc'));
+    if(RV) kids.push(T(150, 188, '中位線 =（上底 ＋ 下底）÷ 2', 'acc'));
     title = '梯形中位線'; cap = '中位線平行兩底，長度是兩底和的一半';
     desc = '梯形 ABCD，M、N 分別是兩腰的中點，中位線 MN 平行上下底，長度為兩底和的一半。';
   }
@@ -742,18 +746,18 @@ function SectorDiagram(p){
   kids.push(h('path', {key:'arc', className:HL ? 'hl' : 'stk', d:arcPath(O[0], O[1], R, a1, a2)}));
   kids.push(seg(O, A, 'stk', 'oa'), seg(O, B, 'stk', 'ob'));
   kids.push(angleArc(O, A, B, 26, 'thin', 'ang'));
-  kids.push(AL(O, A, B, 40, RV ? theta + '°' : 'θ', 'acc', 'lt'));
+  kids.push(AL(O, A, B, 44, RV ? theta + '°' : '圓心角', 'acc', 'lt'));
   kids.push(T(midp(O, A)[0] - 12, midp(O, A)[1], 'r', 'lbl', 'end'));
   kids.push(T(midp(O, B)[0] + 12, midp(O, B)[1], 'r', 'lbl', 'start'));
   kids.push(T(150, 46, '弧長', 'acc2'));
   kids.push(dot(O, 'dot', 'o', 2.6), VL(O, 'O', 0, 16));
   if(RV){
-    kids.push(T(150, 188, '弧長 = 2πr × θ/360°', 'acc'));
-    kids.push(T(150, 204, '扇形面積 = πr² × θ/360°', 'acc'));
+    kids.push(T(150, 188, '弧長 = 2πr ×（圓心角 / 360°）', 'acc'));
+    kids.push(T(150, 204, '扇形面積 = πr² ×（圓心角 / 360°）', 'acc'));
   }
   return h(Fig, {vb:'0 0 300 212', title:'扇形與弧長',
-    desc:'圓心角為 θ 的扇形，兩條半徑長 r，上方粗線為所對的弧。整個圓被切出 θ/360 的比例。',
-    caption:'扇形就是整個圓的 θ/360'}, kids);
+    desc:'一個扇形，兩條半徑長 r，中間夾出圓心角，上方粗線是所對的弧。扇形佔整個圓的比例就是圓心角除以 360 度。',
+    caption:'扇形就是整個圓的「圓心角 ÷ 360°」'}, kids);
 }
 
 /* ── 11. 坐標平面兩點距離 ──────────────────────────────────────────── */
@@ -875,7 +879,7 @@ function QuadraticFunctionGraph(p){
     kids.push(dot(mp(0, 0), 'dot', 'o0'));
     kids.push(T(mp(3.8, 4.3)[0], mp(3.8, 4.3)[1], RV ? 'a > 0 開口向上' : '實線', 'acc2'));
     kids.push(T(mp(-3.6, -4.3)[0], mp(-3.6, -4.3)[1], RV ? 'a < 0 開口向下' : '虛線', 'acc'));
-    if(RV) kids.push(T(150, 14, 'a 的正負只決定開口方向', 'acc'));
+    if(RV) kids.push(T(150, 14, 'y = a(x − h)² + k 的 a 決定開口方向', 'acc'));
     title = '二次函數開口方向';
     desc = RV ? '實線是 a 大於 0 的拋物線，開口向上；虛線是 a 小於 0 的拋物線，開口向下。兩者頂點都在原點。'
               : '兩條頂點都在原點的拋物線，一條開口向上、一條開口向下。';
@@ -940,11 +944,11 @@ function SolidNetDiagram(p){
               seg(bt[2], tp[2], 'stk', 'e2'), seg(bt[3], tp[3], 'dash', 'e3'));
     kids.push(seg(bt[3], bt[0], 'dash', 'h1'), seg(bt[3], bt[2], 'dash', 'h2'));
     kids.push(rightAngle(bt[0], bt[1], tp[0], 11, 'ra'));
-    kids.push(T(150, 176, 'B（底面積）', 'acc2'));
-    kids.push(T(52, 126, 'h', 'lbl', 'end'));
-    if(RV) kids.push(T(150, 26, '直角柱體積 V = B × h', 'acc'));
+    kids.push(T(150, 176, '底面積', 'acc2'));
+    kids.push(T(50, 126, '高', 'acc', 'end'));
+    if(RV) kids.push(T(150, 26, '直角柱體積 = 底面積 × 高', 'acc'));
     title = '直角柱'; cap = '側稜垂直於底面，體積＝底面積 × 高';
-    desc = '一個直角柱，底面以網底標示為 B，側稜長度為高 h，側稜與底面垂直（直角記號）。虛線是被擋住的稜。';
+    desc = '一個直角柱，底面以網底標示，側稜的長度就是高，側稜與底面垂直（直角記號）。虛線是被擋住的稜。';
   } else if(v === 'prism-net'){
     kids.push(h('rect', {key:'r1', x:56, y:66, width:60, height:78, className:'stk'}));
     kids.push(h('rect', {key:'r2', x:116, y:66, width:60, height:78, className:'stk'}));
@@ -953,9 +957,9 @@ function SolidNetDiagram(p){
     kids.push(poly([[116, 144], [176, 144], [146, 190]], HL ? 'hl' : 'fillT', 'tb'));
     kids.push(T(146, 40, '底面', 'acc2'), T(146, 176, '底面', 'acc2'));
     kids.push(T(86, 110, '側面', 'sm'), T(146, 110, '側面', 'sm'), T(206, 110, '側面', 'sm'));
-    kids.push(T(268, 104, 'h', 'lbl'), seg([250, 66], [250, 144], 'thin', 'hh'));
+    kids.push(T(270, 104, '高', 'acc'), seg([250, 66], [250, 144], 'thin', 'hh'));
     kids.push(seg([246, 66], [254, 66], 'thin', 'ht'), seg([246, 144], [254, 144], 'thin', 'hb'));
-    if(RV) kids.push(T(150, 206, '表面積 = 2 × 底面積 + 底面周長 × h', 'acc'));
+    if(RV) kids.push(T(150, 206, '表面積 = 2 × 底面積 + 底面周長 × 高', 'acc'));
     title = '三角柱展開圖'; cap = '側面攤開是一個長方形，長＝底面周長，寬＝高';
     desc = '三角柱的展開圖：中間三個長方形是側面，上下兩個三角形是底面。';
   } else if(v === 'cylinder-net'){
@@ -965,9 +969,9 @@ function SolidNetDiagram(p){
     kids.push(T(150, 104, '側面（長方形）', 'sm'));
     kids.push(T(150, 40, 'r', 'lbl'), seg([150, 36], [172, 36], 'thin', 'rr'));
     kids.push(T(150, 56, RV ? '長 = 2πr' : '長 = ？', 'acc'));
-    kids.push(T(238, 100, 'h', 'lbl'), seg([224, 62], [224, 138], 'thin', 'hh'));
+    kids.push(T(240, 100, '高', 'acc'), seg([224, 62], [224, 138], 'thin', 'hh'));
     if(RV) kids.push(T(150, 196, '側面長方形的長就是底圓周長 2πr', 'acc'));
-    title = '圓柱展開圖'; cap = '側面長方形的長＝底圓周長 2πr，寬＝高 h';
+    title = '圓柱展開圖'; cap = '側面長方形的長＝底圓周長 2πr，寬＝柱體的高';
     desc = '圓柱展開後：中間長方形為側面，上下兩個圓為底面，長方形的長等於底圓的圓周長。';
   } else if(v === 'cone-net'){
     var O = [96, 112], R = 74;

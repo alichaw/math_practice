@@ -173,7 +173,7 @@ function renderNode(node, key, prev){
         h('span', {className:'sign'}, '√'),
         h('span', {className:'cand'}, renderNode(node.c, key + 'r')));
     case 'script':
-      return h('span', {key:key},
+      return h('span', {key:key, className:'sc'},
         renderNode(node.base, key + 'b', prev),
         node.sub ? h('span', {className:'sub'}, renderNode(node.sub, key + 'sb')) : null,
         node.sup ? h('span', {className:'sup'}, renderNode(node.sup, key + 'sp')) : null);

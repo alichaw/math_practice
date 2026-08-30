@@ -158,8 +158,8 @@ function LibraryScreen(props){
                 h('span', {style:{display:'inline-flex', alignItems:'center', gap:'4px'}},
                   h(MasteryDot, {level:masteryLevel(cp)})),
                 c.diagramType ? h('span', null, '附圖') : null),
-              covered ? null : h('div', {className:'mwrap', style:{marginTop:'6px'}},
-                h(M, {t:c.formula})));
+              covered ? null : h('div', {style:{marginTop:'6px'}},
+                h(M, {t:c.formula, cls:'flow'})));
           }))
       : h('div', {className:'block'},
           h('p', {className:'small muted'}, '這組條件下沒有卡片。試著少選幾個條件。')));

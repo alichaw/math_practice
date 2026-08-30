@@ -173,7 +173,7 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .m .tx{font-family:"Noto Sans TC",sans-serif;font-style:normal;font-size:.9em;padding:0 .08em}
 .m .sup{font-size:.72em;vertical-align:.52em;line-height:0}
 .m .sub{font-size:.72em;vertical-align:-.28em;line-height:0}
-.m .frac{display:inline-flex;flex-direction:column;vertical-align:-.52em;
+.m .frac{display:inline-flex;flex-direction:column;vertical-align:middle;
   text-align:center;margin:0 .15em;font-size:.94em}
 .m .frac>span{padding:0 .28em;display:block}
 .m .frac.dfrac{font-size:1.06em}
@@ -184,7 +184,14 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .m .ovl{border-top:1px solid currentColor;padding-top:.04em}
 .m.blk{display:block;white-space:normal;text-align:center;font-size:1.14em;
   padding:8px 2px;overflow-x:auto;overflow-y:hidden}
-.m.blk>*{white-space:nowrap}
+/* 展示型公式：純算式沒有斷點會維持一行，含中文的長公式才會在中文處折行 */
+.m.blk>span{white-space:normal}
+.m.blk .frac,.m.blk .sqrt,.m.blk .ovl,.m.blk .sc{white-space:nowrap}
+.m .sc{white-space:nowrap}
+/* 清單裡的長公式改成折行，不要橫向捲動 */
+.m.flow{display:block;white-space:normal;text-align:left;line-height:1.9;vertical-align:baseline}
+.m.flow>span{white-space:normal}
+.m.flow .frac,.m.flow .sqrt,.m.flow .ovl,.m.flow .sc{white-space:nowrap}
 .mwrap{overflow-x:auto;max-width:100%}
 .formula-card{background:var(--sheet-2);border:1px solid var(--rule);border-radius:4px;
   padding:6px 10px;margin:2px 0}
