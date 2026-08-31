@@ -70,40 +70,53 @@ function DiagramSlot(props){
     highlight:props.highlight, reveal:props.reveal});
 }
 
-/* ── 作答元件：公式積木填空 ────────────────────────────────────────── */
+/* ── 作答元件：公式積木填空 ────────────────────────────────────────
+   空格交給數學排版器渲染，所以放在分數的分子分母、根號內或指數位置
+   都能正確顯示。                                                      */
+function blanksOk(q, filled){
+  if(q.anyOrder){
+    var a = filled.slice().sort(), b = q.blanks.slice().sort();
+    return a.length === b.length && a.every(function(v, i){ return v === b[i]; });
+  }
+  return filled.every(function(v, i){ return v === q.blanks[i]; });
+}
+/* 個別空格是否正確：可互換的題目只要答案在正解集合裡就算對 */
+function blankState(q, filled, i){
+  if(!q.anyOrder) return filled[i] === q.blanks[i];
+  var pool = q.blanks.slice();
+  for(var j = 0; j < filled.length; j++){
+    if(j === i) continue;
+    var at = pool.indexOf(filled[j]);
+    if(at >= 0) pool.splice(at, 1);
+  }
+  return pool.indexOf(filled[i]) >= 0;
+}
 function BlankAnswer(props){
-  var q = props.q, filled = props.filled, locked = props.locked;
-  var active = props.active;
-  var parts = String(q.template).split(/@(\d+)/);
-  var nodes = [];
-  parts.forEach(function(seg, i){
-    if(i % 2 === 0){
-      if(seg) nodes.push(h(M, {key:'s' + i, t:seg}));
-    } else {
-      var bi = Number(seg) - 1;
-      var val = filled[bi];
-      var state = locked ? (val === q.blanks[bi] ? 'ok' : 'bad')
-                         : (active === bi ? 'active' : (val ? 'filled' : ''));
-      nodes.push(h('button', {key:'b' + i, type:'button',
-        className:cx('blank', state), disabled:locked,
-        'aria-label':'第 ' + (bi + 1) + ' 個空格' + (val ? '，已填入答案' : '，尚未填入'),
-        onClick:function(){ props.onBlankClick(bi); }},
-        val ? h(M, {t:val}) : '？'));
-    }
-  });
+  var q = props.q, filled = props.filled, locked = props.locked, active = props.active;
+  var src = String(q.template).replace(/@(\d+)/g, function(_m, n){ return '\\blank{' + n + '}'; });
+  function slot(n, key){
+    var bi = n - 1, val = filled[bi];
+    var state = locked ? (blankState(q, filled, bi) ? 'ok' : 'bad')
+                       : (active === bi ? 'active' : (val ? 'filled' : ''));
+    return h('button', {key:key, type:'button', className:cx('blank', state), disabled:locked,
+      'aria-label':'第 ' + n + ' 個空格' + (val ? '，已填入答案' : '，尚未填入'),
+      onClick:function(){ props.onBlankClick(bi); }},
+      val ? h(M, {t:val}) : '？');
+  }
   var usedCount = {};
   filled.forEach(function(v){ if(v) usedCount[v] = (usedCount[v] || 0) + 1; });
   return h('div', null,
-    h('div', {className:'mwrap'},
-      h('div', {style:{display:'flex', flexWrap:'wrap', alignItems:'center',
-        gap:'2px 0', padding:'10px 2px', fontSize:'18px', lineHeight:'2'}}, nodes)),
+    h('div', {className:'mwrap'}, h(M, {t:src, block:true, slots:slot})),
     locked ? null : h('div', null,
       h('div', {className:'eyebrow', style:{marginTop:'8px'}}, '公式積木'),
       h('div', {className:'bank'}, q.bank.map(function(tok, i){
         return h('button', {key:i, type:'button',
           className:cx('token', usedCount[tok] ? 'used' : ''),
           onClick:function(){ props.onToken(tok); }}, h(M, {t:tok}));
-      }))));
+      }))),
+    q.anyOrder && !locked
+      ? h('div', {className:'tiny muted', style:{marginTop:'6px'}}, '兩個空格的順序可以互換。')
+      : null);
 }
 
 /* ── 作答元件：選項 ────────────────────────────────────────────────── */
@@ -183,7 +196,7 @@ function SessionView(props){
 
   function submit(){
     var correct;
-    if(q.type === 'blank') correct = st.filled.every(function(v, i){ return v === q.blanks[i]; });
+    if(q.type === 'blank') correct = blanksOk(q, st.filled);
     else if(q.type === 'numeric') correct = numEq(st.num, q.answer);
     else correct = st.picked === q.answer;
     props.onSubmit(correct);

@@ -179,7 +179,11 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .m .frac.dfrac{font-size:1.06em}
 .m .frac .den{border-top:1px solid currentColor;padding-top:.08em;margin-top:.08em}
 .m .sqrt{display:inline-flex;align-items:stretch;margin:0 .06em}
-.m .sqrt .sign{font-size:1.06em;line-height:1;transform:scaleY(1.12);transform-origin:bottom}
+.m .sqrt .sign{display:flex;align-items:flex-end;font-size:1.06em;line-height:1;
+  transform:scaleY(1.12);transform-origin:bottom}
+/* 根號內含空格或分數時，勾號要跟著長高才蓋得住 */
+.m .sqrt:has(.blank) .sign{transform:scaleY(2.2)}
+.m .sqrt:has(.frac) .sign{transform:scaleY(1.9)}
 .m .sqrt .cand{border-top:1px solid currentColor;padding:.1em .16em 0 .06em;margin-top:.14em}
 .m .ovl{border-top:1px solid currentColor;padding-top:.04em}
 .m.blk{display:block;white-space:normal;text-align:center;font-size:1.14em;
@@ -199,10 +203,15 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
   color:var(--ink-faint);text-align:center;padding:14px 10px;font-size:13px}
 
 /* ── blanks / token bank ────────────────────────────────────────────── */
-.blank{display:inline-block;min-width:52px;min-height:30px;padding:1px 8px;margin:0 3px;
+.blank{display:inline-flex;align-items:center;justify-content:center;
+  min-width:50px;min-height:34px;padding:2px 8px;margin:0 3px;
   border:1px dashed var(--ink-faint);border-radius:3px;background:var(--sheet);
-  vertical-align:middle;text-align:center;line-height:26px;
+  vertical-align:middle;line-height:1.2;
   transition:border-color .18s ease,background-color .18s ease}
+/* 空格出現在分數、根號或指數裡時要縮小，但仍保持完整可讀 */
+.m .frac .blank,.m .sqrt .blank{min-width:40px;min-height:28px;padding:1px 6px;margin:0 1px}
+.m .sup .blank,.m .sub .blank{min-width:30px;min-height:20px;padding:0 4px;margin:0 1px}
+.m.blk .blank{margin:2px 3px}
 .blank.active{border-style:solid;border-color:var(--teal);background:var(--teal-bg);border-width:2px}
 .blank.filled{border-style:solid;border-color:var(--rule)}
 .blank.ok{border-color:var(--teal);background:var(--teal-bg)}
@@ -376,7 +385,7 @@ function tokenize(src){
   while(i < n){
     var c = src[i];
     if(c === '\\'){
-      var raw = /^\\(text|operatorname|mathrm)\{/.exec(src.slice(i));
+      var raw = /^\\(text|operatorname|mathrm|blank)\{/.exec(src.slice(i));
       if(raw){
         var j = i + raw[0].length, depth = 1, buf = '';
         while(j < n && depth > 0){
@@ -384,7 +393,7 @@ function tokenize(src){
           else if(src[j] === '}'){ depth--; if(!depth) break; }
           buf += src[j]; j++;
         }
-        t.push({t: raw[1] === 'text' ? 'text' : 'fnname', v: buf});
+        t.push({t: raw[1] === 'text' ? 'text' : raw[1] === 'blank' ? 'blank' : 'fnname', v: buf});
         i = j + 1; continue;
       }
       var m = /^\\([a-zA-Z]+)/.exec(src.slice(i));
@@ -428,6 +437,7 @@ function parseAtom(ts, i){
   if(!tk) return [null, i];
   if(tk.t === '{'){ var r = parseSeq(ts, i+1, true); return [{k:'seq', c:r[0]}, r[1]]; }
   if(tk.t === 'text') return [{k:'text', v:tk.v}, i+1];
+  if(tk.t === 'blank') return [{k:'blank', n:Number(tk.v) || 1}, i+1];
   if(tk.t === 'fnname') return [{k:'fn', v:tk.v}, i+1];
   if(tk.t === 'num') return [{k:'num', v:tk.v}, i+1];
   if(tk.t === 'cmd'){
@@ -473,6 +483,8 @@ function isOpenish(node){
   return false;
 }
 
+/* 填空格由外部注入：渲染期間單執行緒使用，渲染結束即清除 */
+var _slots = null;
 function renderSeq(nodes, keyPrefix){
   var out = [];
   for(var i = 0; i < nodes.length; i++){
@@ -487,6 +499,8 @@ function renderNode(node, key, prev){
     case 'seq': return h('span', {key:key}, renderSeq(node.c, key));
     case 'num': return h('span', {key:key, className:'n'}, node.v);
     case 'text': return h('span', {key:key, className:'tx'}, node.v);
+    case 'blank':
+      return _slots ? _slots(node.n, key) : h('span', {key:key, className:'blank'}, '？');
     case 'fn': return h('span', {key:key, className:'fn'}, node.v);
     case 'sp': return h('span', {key:key}, node.v);
     case 'sym':
@@ -533,6 +547,7 @@ function speak(nodes){
       case 'seq': s += speak(nd.c); break;
       case 'num': s += nd.v; break;
       case 'text': s += nd.v; break;
+      case 'blank': s += ' 空格 '; break;
       case 'fn': s += ' ' + nd.v + ' '; break;
       case 'sp': s += ' '; break;
       case 'sym': case 'chr':
@@ -565,8 +580,15 @@ function M(props){
   var nodes;
   try { nodes = parseMemo(src); }
   catch(e){ return h('span', {className:'m'}, src); }
-  return h('span', {className:'m' + (props.block ? ' blk' : '') + (props.cls ? ' ' + props.cls : ''),
-                    role:'math'},
+  var cls = 'm' + (props.block ? ' blk' : '') + (props.cls ? ' ' + props.cls : '');
+  if(props.slots){
+    _slots = props.slots;
+    var body;
+    try { body = renderSeq(nodes, 'm'); } finally { _slots = null; }
+    /* 含互動空格：不加 aria-hidden，讓每個空格按鈕都能被讀到 */
+    return h('span', {className:cls, role:'math'}, body);
+  }
+  return h('span', {className:cls, role:'math'},
     h('span', {'aria-hidden':'true'}, renderSeq(nodes, 'm')),
     h('span', {className:'sr'}, speak(nodes)));
 }
@@ -1617,6 +1639,7 @@ card({id:'A1', grade:8, category:'num', attachedInExam:true, title:'和的平方
   recall:{type:'blank', prompt:'把和的平方公式補完整。',
     template:'(a+b)^2=a^2+@1+@2', blanks:['2ab', 'b^2'],
     bank:['2ab', 'b^2', 'ab', '2b^2', 'a^2b^2'],
+    anyOrder:true,
     hint1:'中間項是「兩項相乘再乘 2」，最後一項是尾項自己平方。'},
   recog:{type:'choice', prompt:'下列哪一個算式最適合直接套用「和的平方公式」？',
     options:[{math:'(x+5)^2'}, {math:'(x+5)(x-5)'}, {math:'x^2-25'}, {math:'(x-5)^2'}],
@@ -1670,6 +1693,7 @@ card({id:'A3', grade:8, category:'num', attachedInExam:true, title:'平方差公
   recall:{type:'blank', prompt:'把平方差公式補完整。',
     template:'a^2-b^2=@1@2', blanks:['(a+b)', '(a-b)'],
     bank:['(a+b)', '(a-b)', '(a^2+b^2)', '(a-b)^2'],
+    anyOrder:true,
     hint1:'答案是兩個括號相乘，一個放加號、一個放減號。'},
   recog:{type:'choice', prompt:'下列哪一個可以用平方差公式因式分解？',
     options:[{math:'x^2-49'}, {math:'x^2+49'}, {math:'x^2-7x'}, {math:'x^2+14x+49'}],
@@ -1698,6 +1722,7 @@ card({id:'A4', grade:8, category:'geo', attachedInExam:true, title:'勾股定理
   recall:{type:'blank', prompt:'補完勾股定理（c 為斜邊）。',
     template:'c^2=@1+@2', blanks:['a^2', 'b^2'],
     bank:['a^2', 'b^2', '2ab', 'ab'],
+    anyOrder:true,
     hint1:'斜邊的平方等於兩股平方的和。'},
   recog:{type:'choice', prompt:'哪一種情境「不能」直接用勾股定理？',
     options:[{t:'三邊長 5、6、7 的一般三角形'}, {t:'長方形的對角線'},
@@ -1925,7 +1950,7 @@ card({id:'B1', grade:7, category:'num', title:'負號分配（括號內相加）
   usageConditions:'括號前面是負號（或減去一整個括號）時，去括號要把每一項都變號。',
   triggerWords:['去括號', '減去', '相反數', '化簡'],
   commonMistakes:['只變第一項的號', '把 −(a+b) 寫成 −a+b'],
-  recall:{type:'blank', prompt:'去括號後應該是？',
+  recall:{type:'blank', anyOrder:true, prompt:'去括號後應該是？',
     template:'-(a+b)=@1@2', blanks:['-a', '-b'],
     bank:['-a', '-b', '+a', '+b'], hint1:'括號內每一項都要變號，不能只變第一項。'},
   recog:{type:'choice', prompt:'化簡 5 − (x + 2) 的第一步應該是？',
@@ -2083,7 +2108,7 @@ card({id:'B8', grade:7, category:'num', title:'積的乘冪',
   usageConditions:'括號內是「相乘」再整體次方時，每個因數都要各自次方。',
   triggerWords:['括號整體次方', '化簡', '科學記號相乘'],
   commonMistakes:['只有一個因數次方', '把 (a+b)ⁿ 也拆開（不成立）'],
-  recall:{type:'blank', prompt:'補完積的乘冪。',
+  recall:{type:'blank', anyOrder:true, prompt:'補完積的乘冪。',
     template:'(ab)^n=@1@2', blanks:['a^n', 'b^n'],
     bank:['a^n', 'b^n', 'ab^n', '(ab)^n'], hint1:'括號內每一個「相乘」的因數都要各自次方。'},
   recog:{type:'choice', prompt:'下列哪一個式子成立？',
@@ -2133,7 +2158,7 @@ card({id:'B10', grade:7, category:'num', title:'比例式的內外項相乘',
   usageConditions:'題目給兩組比相等，要求未知數時使用。',
   triggerWords:['比', '比例', '相當於', '成正比', '對應'],
   commonMistakes:['對錯內外項', '把 a:b 的順序寫反', '單位不同就直接列比'],
-  recall:{type:'blank', prompt:'比例式可以怎麼變成等式？',
+  recall:{type:'blank', anyOrder:true, prompt:'比例式可以怎麼變成等式？',
     template:'a:b=c:d\\Rightarrow @1=@2', blanks:['ad', 'bc'],
     bank:['ad', 'bc', 'ac', 'bd'], hint1:'外項相乘等於內項相乘。'},
   recog:{type:'choice', prompt:'「3 枝筆 45 元，7 枝筆多少元？」最適合列成？',
@@ -2286,7 +2311,7 @@ card({id:'B16', grade:7, category:'num', title:'路程公式',
   usageConditions:'等速運動、相遇問題、追及問題都以此為基礎。',
   triggerWords:['每小時', '公里/時', '相遇', '追上', '幾分鐘後'],
   commonMistakes:['單位不一致（分與小時混用）', '相遇問題忘記兩人速率相加', '把時間當路程'],
-  recall:{type:'blank', prompt:'補完路程公式。',
+  recall:{type:'blank', anyOrder:true, prompt:'補完路程公式。',
     template:'\\text{路程}=@1\\times@2', blanks:['\\text{速率}', '\\text{時間}'],
     bank:['\\text{速率}', '\\text{時間}', '\\text{路程}', '\\text{平均}'],
     hint1:'速率乘時間；求時間就把路程除以速率。'},
@@ -2846,7 +2871,7 @@ card({id:'E2', grade:7, category:'geo', title:'平行四邊形面積',
   triggerWords:['平行四邊形', '面積', '底', '高'],
   commonMistakes:['用斜邊當高', '乘了 ½（那是三角形）'],
   diagramType:'QuadrilateralDiagram', diagramData:{variant:'parallelogram-area'},
-  recall:{type:'blank', prompt:'補完平行四邊形面積公式。',
+  recall:{type:'blank', anyOrder:true, prompt:'補完平行四邊形面積公式。',
     template:'\\text{面積}=@1\\times@2', blanks:['\\text{底}', '\\text{高}'],
     bank:['\\text{底}', '\\text{高}', '\\text{斜邊}', '\\text{周長}'],
     hint1:'底乘高，不用再除以 2；乘的是高，不是斜邊。'},
@@ -2959,7 +2984,7 @@ card({id:'E6', grade:8, category:'geo', title:'坐標平面上兩點的距離',
   triggerWords:['坐標', '距離', '等腰', '判斷三角形形狀'],
   commonMistakes:['x 與 y 相減後忘記平方', '把兩個差直接相加', '最後忘記開根號'],
   diagramType:'CoordinateDistanceDiagram', diagramData:{},
-  recall:{type:'blank', prompt:'補完兩點距離公式。',
+  recall:{type:'blank', anyOrder:true, prompt:'補完兩點距離公式。',
     template:'\\text{兩點距離}=\\sqrt{@1+@2}', blanks:['(x_1-x_2)^2', '(y_1-y_2)^2'],
     bank:['(x_1-x_2)^2', '(y_1-y_2)^2', '(x_1-x_2)', '(x_1+x_2)^2'],
     hint1:'其實就是把 x 的差與 y 的差當兩股，用勾股定理求斜邊。'},
@@ -3217,7 +3242,7 @@ card({id:'E15', grade:7, category:'geo', title:'直角柱體積',
   triggerWords:['柱', '體積', '水槽', '容量', '底面積'],
   commonMistakes:['把底面周長當成底面積', '把底面的邊長直接當成底面積', '單位沒有換成立方單位'],
   diagramType:'SolidNetDiagram', diagramData:{variant:'prism'},
-  recall:{type:'blank', prompt:'補完直角柱體積公式。',
+  recall:{type:'blank', anyOrder:true, prompt:'補完直角柱體積公式。',
     template:'\\text{體積}=@1\\times@2', blanks:['\\text{底面積}', '\\text{高}'],
     bank:['\\text{底面積}', '\\text{高}', '\\text{底面周長}', '\\text{表面積}'],
     hint1:'把底面一層一層往上疊，疊「高」那麼多層。'},
@@ -5089,40 +5114,53 @@ function DiagramSlot(props){
     highlight:props.highlight, reveal:props.reveal});
 }
 
-/* ── 作答元件：公式積木填空 ────────────────────────────────────────── */
+/* ── 作答元件：公式積木填空 ────────────────────────────────────────
+   空格交給數學排版器渲染，所以放在分數的分子分母、根號內或指數位置
+   都能正確顯示。                                                      */
+function blanksOk(q, filled){
+  if(q.anyOrder){
+    var a = filled.slice().sort(), b = q.blanks.slice().sort();
+    return a.length === b.length && a.every(function(v, i){ return v === b[i]; });
+  }
+  return filled.every(function(v, i){ return v === q.blanks[i]; });
+}
+/* 個別空格是否正確：可互換的題目只要答案在正解集合裡就算對 */
+function blankState(q, filled, i){
+  if(!q.anyOrder) return filled[i] === q.blanks[i];
+  var pool = q.blanks.slice();
+  for(var j = 0; j < filled.length; j++){
+    if(j === i) continue;
+    var at = pool.indexOf(filled[j]);
+    if(at >= 0) pool.splice(at, 1);
+  }
+  return pool.indexOf(filled[i]) >= 0;
+}
 function BlankAnswer(props){
-  var q = props.q, filled = props.filled, locked = props.locked;
-  var active = props.active;
-  var parts = String(q.template).split(/@(\d+)/);
-  var nodes = [];
-  parts.forEach(function(seg, i){
-    if(i % 2 === 0){
-      if(seg) nodes.push(h(M, {key:'s' + i, t:seg}));
-    } else {
-      var bi = Number(seg) - 1;
-      var val = filled[bi];
-      var state = locked ? (val === q.blanks[bi] ? 'ok' : 'bad')
-                         : (active === bi ? 'active' : (val ? 'filled' : ''));
-      nodes.push(h('button', {key:'b' + i, type:'button',
-        className:cx('blank', state), disabled:locked,
-        'aria-label':'第 ' + (bi + 1) + ' 個空格' + (val ? '，已填入答案' : '，尚未填入'),
-        onClick:function(){ props.onBlankClick(bi); }},
-        val ? h(M, {t:val}) : '？'));
-    }
-  });
+  var q = props.q, filled = props.filled, locked = props.locked, active = props.active;
+  var src = String(q.template).replace(/@(\d+)/g, function(_m, n){ return '\\blank{' + n + '}'; });
+  function slot(n, key){
+    var bi = n - 1, val = filled[bi];
+    var state = locked ? (blankState(q, filled, bi) ? 'ok' : 'bad')
+                       : (active === bi ? 'active' : (val ? 'filled' : ''));
+    return h('button', {key:key, type:'button', className:cx('blank', state), disabled:locked,
+      'aria-label':'第 ' + n + ' 個空格' + (val ? '，已填入答案' : '，尚未填入'),
+      onClick:function(){ props.onBlankClick(bi); }},
+      val ? h(M, {t:val}) : '？');
+  }
   var usedCount = {};
   filled.forEach(function(v){ if(v) usedCount[v] = (usedCount[v] || 0) + 1; });
   return h('div', null,
-    h('div', {className:'mwrap'},
-      h('div', {style:{display:'flex', flexWrap:'wrap', alignItems:'center',
-        gap:'2px 0', padding:'10px 2px', fontSize:'18px', lineHeight:'2'}}, nodes)),
+    h('div', {className:'mwrap'}, h(M, {t:src, block:true, slots:slot})),
     locked ? null : h('div', null,
       h('div', {className:'eyebrow', style:{marginTop:'8px'}}, '公式積木'),
       h('div', {className:'bank'}, q.bank.map(function(tok, i){
         return h('button', {key:i, type:'button',
           className:cx('token', usedCount[tok] ? 'used' : ''),
           onClick:function(){ props.onToken(tok); }}, h(M, {t:tok}));
-      }))));
+      }))),
+    q.anyOrder && !locked
+      ? h('div', {className:'tiny muted', style:{marginTop:'6px'}}, '兩個空格的順序可以互換。')
+      : null);
 }
 
 /* ── 作答元件：選項 ────────────────────────────────────────────────── */
@@ -5202,7 +5240,7 @@ function SessionView(props){
 
   function submit(){
     var correct;
-    if(q.type === 'blank') correct = st.filled.every(function(v, i){ return v === q.blanks[i]; });
+    if(q.type === 'blank') correct = blanksOk(q, st.filled);
     else if(q.type === 'numeric') correct = numEq(st.num, q.answer);
     else correct = st.picked === q.answer;
     props.onSubmit(correct);

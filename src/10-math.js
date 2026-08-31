@@ -34,7 +34,7 @@ function tokenize(src){
   while(i < n){
     var c = src[i];
     if(c === '\\'){
-      var raw = /^\\(text|operatorname|mathrm)\{/.exec(src.slice(i));
+      var raw = /^\\(text|operatorname|mathrm|blank)\{/.exec(src.slice(i));
       if(raw){
         var j = i + raw[0].length, depth = 1, buf = '';
         while(j < n && depth > 0){
@@ -42,7 +42,7 @@ function tokenize(src){
           else if(src[j] === '}'){ depth--; if(!depth) break; }
           buf += src[j]; j++;
         }
-        t.push({t: raw[1] === 'text' ? 'text' : 'fnname', v: buf});
+        t.push({t: raw[1] === 'text' ? 'text' : raw[1] === 'blank' ? 'blank' : 'fnname', v: buf});
         i = j + 1; continue;
       }
       var m = /^\\([a-zA-Z]+)/.exec(src.slice(i));
@@ -86,6 +86,7 @@ function parseAtom(ts, i){
   if(!tk) return [null, i];
   if(tk.t === '{'){ var r = parseSeq(ts, i+1, true); return [{k:'seq', c:r[0]}, r[1]]; }
   if(tk.t === 'text') return [{k:'text', v:tk.v}, i+1];
+  if(tk.t === 'blank') return [{k:'blank', n:Number(tk.v) || 1}, i+1];
   if(tk.t === 'fnname') return [{k:'fn', v:tk.v}, i+1];
   if(tk.t === 'num') return [{k:'num', v:tk.v}, i+1];
   if(tk.t === 'cmd'){
@@ -131,6 +132,8 @@ function isOpenish(node){
   return false;
 }
 
+/* 填空格由外部注入：渲染期間單執行緒使用，渲染結束即清除 */
+var _slots = null;
 function renderSeq(nodes, keyPrefix){
   var out = [];
   for(var i = 0; i < nodes.length; i++){
@@ -145,6 +148,8 @@ function renderNode(node, key, prev){
     case 'seq': return h('span', {key:key}, renderSeq(node.c, key));
     case 'num': return h('span', {key:key, className:'n'}, node.v);
     case 'text': return h('span', {key:key, className:'tx'}, node.v);
+    case 'blank':
+      return _slots ? _slots(node.n, key) : h('span', {key:key, className:'blank'}, '？');
     case 'fn': return h('span', {key:key, className:'fn'}, node.v);
     case 'sp': return h('span', {key:key}, node.v);
     case 'sym':
@@ -191,6 +196,7 @@ function speak(nodes){
       case 'seq': s += speak(nd.c); break;
       case 'num': s += nd.v; break;
       case 'text': s += nd.v; break;
+      case 'blank': s += ' 空格 '; break;
       case 'fn': s += ' ' + nd.v + ' '; break;
       case 'sp': s += ' '; break;
       case 'sym': case 'chr':
@@ -223,8 +229,15 @@ function M(props){
   var nodes;
   try { nodes = parseMemo(src); }
   catch(e){ return h('span', {className:'m'}, src); }
-  return h('span', {className:'m' + (props.block ? ' blk' : '') + (props.cls ? ' ' + props.cls : ''),
-                    role:'math'},
+  var cls = 'm' + (props.block ? ' blk' : '') + (props.cls ? ' ' + props.cls : '');
+  if(props.slots){
+    _slots = props.slots;
+    var body;
+    try { body = renderSeq(nodes, 'm'); } finally { _slots = null; }
+    /* 含互動空格：不加 aria-hidden，讓每個空格按鈕都能被讀到 */
+    return h('span', {className:cls, role:'math'}, body);
+  }
+  return h('span', {className:cls, role:'math'},
     h('span', {'aria-hidden':'true'}, renderSeq(nodes, 'm')),
     h('span', {className:'sr'}, speak(nodes)));
 }

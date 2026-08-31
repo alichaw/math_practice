@@ -179,7 +179,11 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .m .frac.dfrac{font-size:1.06em}
 .m .frac .den{border-top:1px solid currentColor;padding-top:.08em;margin-top:.08em}
 .m .sqrt{display:inline-flex;align-items:stretch;margin:0 .06em}
-.m .sqrt .sign{font-size:1.06em;line-height:1;transform:scaleY(1.12);transform-origin:bottom}
+.m .sqrt .sign{display:flex;align-items:flex-end;font-size:1.06em;line-height:1;
+  transform:scaleY(1.12);transform-origin:bottom}
+/* 根號內含空格或分數時，勾號要跟著長高才蓋得住 */
+.m .sqrt:has(.blank) .sign{transform:scaleY(2.2)}
+.m .sqrt:has(.frac) .sign{transform:scaleY(1.9)}
 .m .sqrt .cand{border-top:1px solid currentColor;padding:.1em .16em 0 .06em;margin-top:.14em}
 .m .ovl{border-top:1px solid currentColor;padding-top:.04em}
 .m.blk{display:block;white-space:normal;text-align:center;font-size:1.14em;
@@ -199,10 +203,15 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
   color:var(--ink-faint);text-align:center;padding:14px 10px;font-size:13px}
 
 /* ── blanks / token bank ────────────────────────────────────────────── */
-.blank{display:inline-block;min-width:52px;min-height:30px;padding:1px 8px;margin:0 3px;
+.blank{display:inline-flex;align-items:center;justify-content:center;
+  min-width:50px;min-height:34px;padding:2px 8px;margin:0 3px;
   border:1px dashed var(--ink-faint);border-radius:3px;background:var(--sheet);
-  vertical-align:middle;text-align:center;line-height:26px;
+  vertical-align:middle;line-height:1.2;
   transition:border-color .18s ease,background-color .18s ease}
+/* 空格出現在分數、根號或指數裡時要縮小，但仍保持完整可讀 */
+.m .frac .blank,.m .sqrt .blank{min-width:40px;min-height:28px;padding:1px 6px;margin:0 1px}
+.m .sup .blank,.m .sub .blank{min-width:30px;min-height:20px;padding:0 4px;margin:0 1px}
+.m.blk .blank{margin:2px 3px}
 .blank.active{border-style:solid;border-color:var(--teal);background:var(--teal-bg);border-width:2px}
 .blank.filled{border-style:solid;border-color:var(--rule)}
 .blank.ok{border-color:var(--teal);background:var(--teal-bg)}
