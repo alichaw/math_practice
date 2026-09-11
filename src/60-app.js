@@ -2,7 +2,7 @@
    四個主要畫面與應用程式根元件
    ══════════════════════════════════════════════════════════════════════ */
 var NAV = [
-  {id:'home', label:'本次複習', path:'M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4'},
+  {id:'home', label:'今日複習', path:'M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4'},
   {id:'library', label:'公式與性質', path:'M5 4h9a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3z M17 7h2v13'},
   {id:'methods', label:'常用解法', path:'M4 6h12 M4 12h16 M4 18h9 M19 5l2 2-2 2'},
   {id:'stats', label:'錯題與進度', path:'M4 20V10 M10 20V4 M16 20v-7 M22 20H2'}
@@ -17,52 +17,52 @@ function BottomNav(props){
   }));
 }
 
-/* ── 本次複習 ─────────────────────────────────────────────────────── */
+/* ── 今日複習 ─────────────────────────────────────────────────────── */
 function HomeScreen(props){
   var p = props.progress;
+  var due = dueList(p);
   var pending = pendingList(p);
   var fresh = newList(p);
   var weak = weakest(p, 3);
   var totals = sessionTotals(p);
   var mastered = ALL_CARDS.length - pending.length;
-  var planned = Math.min(12, pending.length);
+  var planned = Math.min(12, due.length || Math.min(8, pending.length));
   var mins = Math.max(1, Math.round(planned * 25 / 60));
 
   return h('div', null,
-    h(SectionHead, {title:'本次複習', right:todayStr()}),
+    h(SectionHead, {title:'今天的複習', right:todayStr()}),
     h('div', {className:'block'},
-      h('div', {style:{display:'flex', alignItems:'flex-end', gap:'10px'}},
-        h('div', null,
-          h('div', {className:'big'}, totals.n),
-          h('div', {className:'tiny muted'}, '本次已練題數')),
-        h('div', {style:{marginLeft:'auto', textAlign:'right'}},
-          h('div', {className:'big', style:{fontSize:'22px'}},
-            totals.pct === null ? '—' : totals.pct + '%'),
-          h('div', {className:'tiny muted'}, '本次正確率'))),
-      h('hr', {className:'rule'}),
-      pending.length > 0
+      due.length > 0
         ? h('div', null,
-            h('div', {className:'kv'},
-              h('span', null, '還沒練熟的卡'), h('b', null, pending.length + ' 張')),
-            h('div', {className:'kv'},
-              h('span', null, '這輪題數 / 預估時間'),
-              h('b', null, planned + ' 題 · 約 ' + mins + ' 分')),
+            h('div', {style:{display:'flex', alignItems:'flex-end', gap:'10px'}},
+              h('div', null,
+                h('div', {className:'big'}, due.length),
+                h('div', {className:'tiny muted'}, '張卡今天到期')),
+              h('div', {style:{marginLeft:'auto', textAlign:'right'}},
+                h('div', {className:'big', style:{fontSize:'22px'}}, '約 ' + mins + ' 分'),
+                h('div', {className:'tiny muted'}, '這輪 ' + planned + ' 題'))),
             h('div', {className:'btnrow'},
               h('button', {className:'btn primary', onClick:function(){ props.onStart('due'); }},
-                '開始 5 分鐘複習')),
-            h('div', {className:'btnrow'},
-              h('button', {className:'btn ghost', onClick:function(){ props.onStart('free'); }},
-                '自由練習')))
+                '開始 5 分鐘複習')))
         : h('div', null,
             h('div', {className:'banner teal', style:{marginBottom:'12px'}},
-              h('span', {'aria-hidden':'true'}, '\u2713'),
-              h('span', null, '本次已經把 93 張卡全部練熟了，可以再抽考自己。')),
-            h('div', {className:'btnrow'},
-              h('button', {className:'btn primary', onClick:function(){ props.onStart('free'); }},
-                '自由練習')))),
-    h('div', {className:'banner', style:{marginTop:'10px'}},
-      h('span', {'aria-hidden':'true'}, '\u2139'),
-      h('span', null, SESSION_NOTE + '想留紀錄的話，練完後把「錯題與進度」的數字抄到自己的筆記本。')),
+              h('span', {'aria-hidden':'true'}, '✓'),
+              h('span', null, pending.length === 0
+                ? '93 張卡全部練熟了，可以隨機抽考自己。'
+                : '今天沒有到期的複習卡，可以先認識沒練過的新公式。')),
+            pending.length > 0
+              ? h('div', {className:'btnrow'},
+                  h('button', {className:'btn primary', onClick:function(){ props.onStart('due'); }},
+                    '練 ' + Math.min(12, pending.length) + ' 張沒練熟的'))
+              : null),
+      h('div', {className:'btnrow'},
+        h('button', {className:'btn ghost', onClick:function(){ props.onStart('free'); }},
+          '自由練習'))),
+    props.storeNote
+      ? h('div', {className:'banner', style:{marginTop:'10px'}},
+          h('span', {'aria-hidden':'true'}, 'ℹ'),
+          h('span', null, props.storeNote))
+      : null,
     h(SectionHead, {title:'最容易忘記'}),
     weak.length
       ? h('div', null, weak.map(function(w){
@@ -71,7 +71,7 @@ function HomeScreen(props){
             onClick:function(){ props.onOpenCard(w.card.id); }},
             h('div', {className:'rtop'},
               h('span', {className:'rtitle'}, w.card.title),
-              h('span', {className:'tag red'}, '\u932f ' + cp.lapses + ' \u6b21')),
+              h('span', {className:'tag red'}, '錯 ' + cp.lapses + ' 次')),
             h('div', {className:'rmeta'},
               h('span', null, CATEGORIES[w.card.category]),
               h('span', null, '正確率 ' + Math.round(w.acc * 100) + '%'),
@@ -79,14 +79,16 @@ function HomeScreen(props){
         }))
       : h('div', {className:'block tint'},
           h('p', {className:'small muted'}, '還沒有累積錯題紀錄。先做一輪複習，這裡就會列出最需要補強的三個知識點。')),
-    h(SectionHead, {title:'本次進度'}),
+    h(SectionHead, {title:'學習進度'}),
     h('div', {className:'block'},
       h('div', {className:'kv'}, h('span', null, '已熟練的知識點'),
         h('b', null, mastered + ' / ' + ALL_CARDS.length)),
       h('div', {className:'kv'}, h('span', null, '還沒練過的卡'),
         h('b', null, fresh.length + ' 張')),
-      h('div', {className:'kv'}, h('span', null, '本次答對 / 答錯'),
-        h('b', null, totals.ok + ' / ' + (totals.n - totals.ok)))));
+      h('div', {className:'kv'}, h('span', null, '累計答對 / 答錯'),
+        h('b', null, totals.ok + ' / ' + (totals.n - totals.ok))),
+      h('div', {className:'kv'}, h('span', null, '累計正確率'),
+        h('b', null, totals.pct === null ? '—' : totals.pct + '%'))));
 }
 
 /* ── 公式與性質 ───────────────────────────────────────────────────── */
@@ -351,7 +353,7 @@ function StatsScreen(props){
     plan.length
       ? h('div', null,
           h('p', {className:'tiny muted', style:{marginBottom:'8px'}},
-            '依你的自評排出的下次複習時間。這是要抄進行事曆的計畫，' + SESSION_NOTE),
+            '依你的自評排出的下次複習時間，到期當天首頁就會提醒你。'),
           plan.slice(0, 10).map(function(it){
             return h('button', {key:it.card.id, className:'row',
               onClick:function(){ props.onOpenCard(it.card.id); }},
@@ -378,18 +380,20 @@ function StatsScreen(props){
         }))
       : h('div', {className:'block tint'},
           h('p', {className:'small muted'}, '還沒有錯題。答錯的卡會在本輪稍後再出現一次。')),
-    h(SectionHead, {title:'本次練習'}),
+    h(SectionHead, {title:'練習總計'}),
     h('div', {className:'block'},
-      h('div', {className:'kv'}, h('span', null, '已練題數'), h('b', null, totals.n)),
+      h('div', {className:'kv'}, h('span', null, '累計已練題數'), h('b', null, totals.n)),
       h('div', {className:'kv'}, h('span', null, '答對 / 答錯'),
         h('b', null, totals.ok + ' / ' + (totals.n - totals.ok))),
       h('div', {className:'kv'}, h('span', null, '正確率'),
         h('b', null, totals.pct === null ? '—' : totals.pct + '%')),
-      h('div', {className:'banner', style:{marginTop:'10px'}},
+      h('div', {className:'kv'}, h('span', null, '最後更新'), h('b', null, p.updatedAt)),
+      h('div', {className:cx('banner', props.storeMode === 'local' ? 'teal' : '')},
         h('span', {'aria-hidden':'true'}, 'ℹ'),
-        h('span', null, SESSION_NOTE + '這個網站不會把任何資料存到裝置或雲端。')),
+        h('span', null, STORE_NOTE[props.storeMode] +
+          '進度只留在這台裝置，不會上傳，也沒有人能從別的裝置看到。')),
       h('div', {className:'btnrow'},
-        h('button', {className:'btn danger', onClick:props.onReset}, '重設本次進度'))));
+        h('button', {className:'btn danger', onClick:props.onReset}, '重設全部進度'))));
 }
 
 /* ── 應用程式根元件 ───────────────────────────────────────────────── */
@@ -406,11 +410,13 @@ function makeSlot(queue, idx, results){
 }
 
 function App(){
-  /* 進度只放在記憶體，不寫入任何儲存空間 */
+  /* 進度存在這台裝置的瀏覽器本機儲存，不經過帳號或伺服器 */
   var boot = useRef(null);
-  if(!boot.current) boot.current = emptyProgress();
+  if(!boot.current) boot.current = Store.load();
   var pState = useState(boot.current), progress = pState[0], setProgress = pState[1];
   var progressRef = useRef(progress);
+  var smState = useState(Store.mode), storeMode = smState[0], setStoreMode = smState[1];
+  var snState = useState(Store.note), storeNote = snState[0], setStoreNote = snState[1];
   var tState = useState('home'), tab = tState[0], setTab = tState[1];
   var sState = useState(null), session = sState[0], setSession = sState[1];
   var cState = useState(null), openCard = cState[0], setOpenCard = cState[1];
@@ -428,15 +434,18 @@ function App(){
   }, [toast]);
   useEffect(function(){ window.scrollTo(0, 0); }, [tab, session ? session.idx : -1]);
 
+  function onStoreStatus(mode, note){ setStoreMode(mode); setStoreNote(note); }
   function update(mutator){
     var next = JSON.parse(JSON.stringify(progressRef.current));
     mutator(next);
     progressRef.current = next;
     setProgress(next);
+    Store.save(next, onStoreStatus);
   }
   function replaceProgress(next){
     progressRef.current = next;
     setProgress(next);
+    Store.save(next, onStoreStatus);
   }
   function startSession(mode, cards){
     var queue = buildQueue(progressRef.current, {mode:mode, cards:cards, limit:12});
@@ -533,7 +542,8 @@ function App(){
       onReason:function(r){ setSession(function(s){ return Object.assign({}, s, {reason:r}); }); },
       onQuit:function(){ setSession(null); }});
   } else if(tab === 'home'){
-    body = h(HomeScreen, {progress:progress, onStart:startSession, onOpenCard:setOpenCard});
+    body = h(HomeScreen, {progress:progress, onStart:startSession, onOpenCard:setOpenCard,
+      storeNote:storeNote});
   } else if(tab === 'library'){
     body = h(LibraryScreen, {progress:progress, filters:filters, setFilters:setFilters,
       covered:covered, setCovered:setCovered, onOpenCard:setOpenCard,
@@ -541,7 +551,7 @@ function App(){
   } else if(tab === 'methods'){
     body = h(MethodsScreen, {onOpen:setOpenMethod});
   } else {
-    body = h(StatsScreen, {progress:progress, onOpenCard:setOpenCard,
+    body = h(StatsScreen, {progress:progress, onOpenCard:setOpenCard, storeMode:storeMode,
       onReset:function(){ setDialog('reset1'); }});
   }
 
@@ -551,7 +561,8 @@ function App(){
   return h('div', {className:'app'},
     h('header', {className:'topbar'},
       h('h1', null, '會考數學公式教練'),
-      h('span', {className:'sub'}, session ? 'PRACTICE' : '本次練習')),
+      h('span', {className:'sub'}, session ? 'PRACTICE'
+        : (storeMode === 'local' ? '進度已保存' : '未保存'))),
     h('main', {className:'main'}, body),
     session ? null : h(BottomNav, {tab:tab, onTab:setTab}),
     toast ? h('div', {style:{position:'fixed', left:0, right:0, bottom:'70px', zIndex:50,
@@ -563,20 +574,21 @@ function App(){
         onReveal:function(){ setCovered(false); }, onPractice:practiceOne})) : null,
     methodObj ? h(Sheet, {title:methodObj.title, onClose:function(){ setOpenMethod(null); }},
       h(MethodDetail, {m:methodObj})) : null,
-    dialog === 'reset1' ? h(Modal, {title:'要重設本次進度嗎？', onClose:function(){ setDialog(null); }},
-      h('p', {className:'small'}, '這會清除本次的作答紀錄、熟練度與複習間隔安排，而且無法復原。'),
+    dialog === 'reset1' ? h(Modal, {title:'要重設全部進度嗎？', onClose:function(){ setDialog(null); }},
+      h('p', {className:'small'}, '這會清除這台裝置上所有的作答紀錄、熟練度與複習排程，而且無法復原。'),
       h('div', {className:'btnrow'},
         h('button', {className:'btn ghost', onClick:function(){ setDialog(null); }}, '取消'),
         h('button', {className:'btn danger', onClick:function(){ setDialog('reset2'); }}, '繼續'))) : null,
     dialog === 'reset2' ? h(Modal, {title:'最後確認', onClose:function(){ setDialog(null); }},
       h('div', {className:'banner red', style:{marginBottom:'10px'}},
         h('span', {'aria-hidden':'true'}, '！'),
-        h('span', null, '按下「確定重設」後，本次 ' + Object.keys(progress.cards).length +
-          ' 張卡的紀錄會全部歸零。')),
+        h('span', null, '按下「確定重設」後，' + Object.keys(progress.cards).length +
+          ' 張卡的紀錄會全部歸零，而且無法復原。')),
       h('div', {className:'btnrow'},
         h('button', {className:'btn ghost', onClick:function(){ setDialog(null); }}, '不要重設'),
         h('button', {className:'btn danger', onClick:function(){
+          Store.clear();
           replaceProgress(emptyProgress()); setDialog(null); setSession(null);
-          setToast('本次進度已重設。');
+          setToast('進度已全部重設。');
         }}, '確定重設'))) : null);
 }

@@ -214,11 +214,7 @@ function reasonStats(progress){
   }).sort(function(a, b){ return b.n - a.n; });
 }
 
-/* ── 本次練習的暫存狀態 ─────────────────────────────────────────────
-   這個網站不使用任何資料儲存：進度只放在 React state（記憶體）裡，
-   重新整理或關閉分頁就會從頭開始。                                     */
-var SESSION_NOTE = '進度只保留在這個分頁，重新整理後會從頭開始。';
-
+/* ── 練習狀態的查詢輔助 ─────────────────────────────────────────── */
 /* 還沒練熟的卡（含完全沒練過的），用來排出下一輪練習 */
 function pendingList(progress){
   return ALL_CARDS.filter(function(c){
@@ -256,3 +252,98 @@ function recordReason(progress, id, reason){
     progress.recentWrong[0].reason = reason;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   進度保存：只寫入這台裝置的瀏覽器本機儲存
+   不使用帳號、不連伺服器、不碰檔案；讀寫失敗時退回記憶體並顯示提示
+   ══════════════════════════════════════════════════════════════════════ */
+var STORAGE_KEY = 'mathCoach.progress.v2';
+var STORE_NOTE = {
+  local:'進度會存在這台裝置的瀏覽器裡，下次打開可以接著練。換裝置或清除瀏覽器資料就會歸零。',
+  memory:'這個瀏覽器不允許保存資料（例如無痕模式），進度只保留在這個分頁。'
+};
+
+/* 讀回來的資料一律清洗過：只保留認得的欄位，壞資料不會讓網站當掉 */
+function normalizeProgress(raw){
+  if(!raw || typeof raw !== 'object') return null;
+  var out = emptyProgress();
+  out.createdAt = typeof raw.createdAt === 'string' ? raw.createdAt : out.createdAt;
+  out.updatedAt = typeof raw.updatedAt === 'string' ? raw.updatedAt : out.updatedAt;
+  var cards = (raw.cards && typeof raw.cards === 'object') ? raw.cards : {};
+  Object.keys(cards).forEach(function(id){
+    if(!CARD_BY_ID[id]) return;
+    var c = cards[id] || {}, o = emptyCard();
+    o.seen = Math.max(0, Number(c.seen) || 0);
+    o.due = (typeof c.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.due)) ? c.due : null;
+    o.successDays = Array.isArray(c.successDays)
+      ? c.successDays.filter(function(d){
+          return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+        }).slice(0, 60)
+      : [];
+    ['recall', 'recognition', 'application'].forEach(function(k){
+      var s = c[k] || {};
+      o[k] = {c:Math.max(0, Number(s.c) || 0), t:Math.max(0, Number(s.t) || 0)};
+      if(o[k].c > o[k].t) o[k].c = o[k].t;
+    });
+    o.unsureIdx = Math.min(Math.max(0, Number(c.unsureIdx) || 0), LADDER_UNSURE.length - 1);
+    o.knownIdx = Math.min(Math.max(0, Number(c.knownIdx) || 0), LADDER_KNOWN.length - 1);
+    o.lapses = Math.max(0, Number(c.lapses) || 0);
+    o.lastResult = (c.lastResult === 'ok' || c.lastResult === 'miss') ? c.lastResult : null;
+    o.lastAt = typeof c.lastAt === 'string' ? c.lastAt : null;
+    if(c.reasons && typeof c.reasons === 'object'){
+      Object.keys(c.reasons).forEach(function(r){
+        if(REASON_LABEL[r]) o.reasons[r] = Math.max(0, Number(c.reasons[r]) || 0);
+      });
+    }
+    out.cards[id] = o;
+  });
+  if(Array.isArray(raw.recentWrong)){
+    out.recentWrong = raw.recentWrong.filter(function(w){
+      return w && CARD_BY_ID[w.id] && KINDS[w.kind];
+    }).slice(0, 30).map(function(w){
+      return {id:w.id, kind:w.kind,
+        reason:REASON_LABEL[w.reason] ? w.reason : null,
+        date:(typeof w.date === 'string') ? w.date : ''};
+    });
+  }
+  return out;
+}
+
+var Store = {
+  mode:'memory', note:null, timer:null,
+  load:function(){
+    var raw = null;
+    try { raw = window.localStorage.getItem(STORAGE_KEY); }
+    catch(e){ this.mode = 'memory'; this.note = STORE_NOTE.memory; return emptyProgress(); }
+    this.mode = 'local'; this.note = null;
+    if(!raw) return emptyProgress();
+    var parsed = null;
+    try { parsed = JSON.parse(raw); } catch(e){ parsed = null; }
+    var clean = normalizeProgress(parsed);
+    if(!clean){
+      this.note = '上次的進度讀不回來（資料毀損），已從頭開始。';
+      return emptyProgress();
+    }
+    return clean;
+  },
+  save:function(data, onStatus){
+    var self = this;
+    if(self.timer) clearTimeout(self.timer);
+    self.timer = setTimeout(function(){
+      var before = self.mode;
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        self.mode = 'local'; self.note = null;
+      } catch(e){
+        self.mode = 'memory';
+        self.note = (e && e.name === 'QuotaExceededError')
+          ? '瀏覽器儲存空間已滿，進度只保留在這個分頁。'
+          : STORE_NOTE.memory;
+      }
+      if(before !== self.mode && onStatus) onStatus(self.mode, self.note);
+    }, 400);
+  },
+  clear:function(){
+    try { window.localStorage.removeItem(STORAGE_KEY); } catch(e){}
+  }
+};
