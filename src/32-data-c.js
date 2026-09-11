@@ -26,7 +26,7 @@ card({id:'D1', grade:8, category:'eq', title:'水平線 y = c',
            {label:'代入直線', text:'不論 x 是多少，y 都是 −3'},
            {label:'交點', math:'(0,-3)'}],
     answer:'(0,-3)'},
-  explain:'c 是固定的高度。y = c 的圖形是一條水平線，斜率為 0（本課程不使用斜率公式，只需知道它是水平的）。',
+  explain:'c 是固定的高度。y = c 的圖形是一條與 x 軸平行的水平線，線上每一點的 y 都等於 c，x 可以是任何數。',
   source:'自己要記'}),
 
 card({id:'D2', grade:8, category:'eq', title:'鉛垂線 x = c',

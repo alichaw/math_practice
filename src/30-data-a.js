@@ -187,7 +187,7 @@ card({id:'A7', grade:7, category:'geo', attachedInExam:true, title:'凸 n 邊形
   variables:[{sym:'n', desc:'多邊形的邊數（也是頂點數）'}],
   usageConditions:'題目給多邊形邊數求角度總和，或已知部分角求剩下的角時使用。',
   triggerWords:['幾邊形', '內角和', '每個內角', '正多邊形'],
-  commonMistakes:['忘記減 2', '把內角和當成每一個內角', '與外角和 360° 搞混'],
+  commonMistakes:['忘記減 2', '把內角和當成每一個內角', '把 (n−2) 乘錯成 (n−1)'],
   diagramType:'QuadrilateralDiagram', diagramData:{variant:'polygon-angles'},
   recall:{type:'blank', prompt:'補完凸 n 邊形的內角和公式。',
     template:'\\text{內角和}=@1\\times 180^\\circ', blanks:['(n-2)'],
