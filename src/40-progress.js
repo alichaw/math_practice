@@ -165,8 +165,24 @@ function buildQueue(progress, opts){
     }
   }
   return pool.map(function(c){
-    return {cardId:c.id, kind:pickKind(progress.cards[c.id]), retry:false};
+    var k = pickKind(progress.cards[c.id]);
+    return {cardId:c.id, kind:k, qi:qIndex(progress.cards[c.id], k), retry:false};
   });
+}
+/* 這張卡這個題型已經作答幾次，就輪到題庫的第幾題 */
+function qIndex(cp, kind){
+  if(!cp || !cp[kind]) return 0;
+  return cp[kind].t;
+}
+/* 這一題要從卡片的題庫裡拿第幾題 */
+function poolFor(card, kind){
+  return kind === 'recall' ? [card.recallPrompt]
+       : kind === 'recognition' ? card.recognitionQuestions
+       : card.applicationQuestions;
+}
+function qFor(card, kind, qi){
+  var pool = poolFor(card, kind);
+  return pool[(qi || 0) % pool.length];
 }
 /* 最容易忘記的知識點 */
 function weakest(progress, n){

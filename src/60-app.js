@@ -397,13 +397,8 @@ function StatsScreen(props){
 }
 
 /* ── 應用程式根元件 ───────────────────────────────────────────────── */
-function qFor(card, kind){
-  return kind === 'recall' ? card.recallPrompt
-       : kind === 'recognition' ? card.recognitionQuestion
-       : card.applicationQuestion;
-}
 function makeSlot(queue, idx, results){
-  var item = queue[idx], q = qFor(CARD_BY_ID[item.cardId], item.kind);
+  var item = queue[idx], q = qFor(CARD_BY_ID[item.cardId], item.kind, item.qi);
   return {queue:queue, idx:idx, phase:'answer', hint:0,
     filled:q.type === 'blank' ? q.blanks.map(function(){ return null; }) : [],
     active:0, picked:null, num:'', reason:null, results:results || []};
@@ -455,8 +450,9 @@ function App(){
   }
   function practiceOne(card){
     setOpenCard(null);
-    setSession(makeSlot([{cardId:card.id, kind:pickKind(progressRef.current.cards[card.id]),
-      retry:false}], 0, []));
+    var k = pickKind(progressRef.current.cards[card.id]);
+    setSession(makeSlot([{cardId:card.id, kind:k,
+      qi:qIndex(progressRef.current.cards[card.id], k), retry:false}], 0, []));
   }
 
   var cur = session && session.phase !== 'done' ? session.queue[session.idx] : null;
@@ -478,7 +474,7 @@ function App(){
     var queue = s.queue.slice();
     if(correct === false && !queue[s.idx].retry){
       queue.splice(Math.min(s.idx + 3, queue.length), 0,
-        {cardId:queue[s.idx].cardId, kind:queue[s.idx].kind, retry:true});
+        {cardId:queue[s.idx].cardId, kind:queue[s.idx].kind, qi:queue[s.idx].qi, retry:true});
     }
     var nextIdx = s.idx + 1, done = nextIdx >= queue.length;
     update(function(p){ scheduleCard(p, s.queue[s.idx].cardId, conf, correct); });

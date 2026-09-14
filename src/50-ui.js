@@ -184,11 +184,10 @@ function renderAnswer(q){
 
 /* ── 練習流程 ─────────────────────────────────────────────────────── */
 function SessionView(props){
-  var st = props.state, card = CARD_BY_ID[st.queue[st.idx].cardId];
-  var kind = st.queue[st.idx].kind;
-  var q = kind === 'recall' ? card.recallPrompt
-        : kind === 'recognition' ? card.recognitionQuestion
-        : card.applicationQuestion;
+  var st = props.state, item = st.queue[st.idx], card = CARD_BY_ID[item.cardId];
+  var kind = item.kind;
+  /* 依題庫索引取題：同一張卡重複練習時會輪到下一題 */
+  var q = qFor(card, kind, item.qi);
   var locked = st.phase !== 'answer';
   var canSubmit = q.type === 'blank' ? st.filled.every(function(v){ return !!v; })
                 : q.type === 'numeric' ? st.num.length > 0
