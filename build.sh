@@ -23,7 +23,7 @@ try {
 HTML
   cat src/10-math.js src/20-svg.js \
       src/30-data-a.js src/31-data-b.js src/32-data-c.js src/33-data-geo.js src/34-data-methods.js \
-      src/40-progress.js src/50-ui.js src/60-app.js src/70-mount.js
+      src/40-progress.js src/45-juice.js src/50-ui.js src/60-app.js src/70-mount.js
   cat <<'HTML'
 } catch(err){
   var el = document.getElementById('root');

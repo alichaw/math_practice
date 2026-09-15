@@ -13,6 +13,11 @@
   --rule:#D9D2C4; --rule-soft:#E7E1D4;
   --focus:#0C7361;
   --shadow:0 1px 0 rgba(22,39,61,.06);
+  /* 遊戲感的重點色：取自學生常用的螢光筆 */
+  --hot:#E8365D; --hot-bg:#FFE8ED;
+  --gold:#F5A524; --gold-bg:#FFF3DC;
+  --win:#12A87C; --win-bg:#DCF6EE;
+  --grape:#7A4DE8; --grape-bg:#EFE8FF;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -24,6 +29,10 @@
     --rule:#2E3A45; --rule-soft:#26313A;
     --focus:#4FC3AB;
     --shadow:0 1px 0 rgba(0,0,0,.3);
+    --hot:#FF6B8A; --hot-bg:#3A1620;
+    --gold:#FFC65C; --gold-bg:#3A2C12;
+    --win:#3FD6A8; --win-bg:#0F332A;
+    --grape:#A98BFF; --grape-bg:#241A3D;
   }
 }
 :root[data-theme="dark"]{
@@ -35,6 +44,10 @@
   --rule:#2E3A45; --rule-soft:#26313A;
   --focus:#4FC3AB;
   --shadow:0 1px 0 rgba(0,0,0,.3);
+  --hot:#FF6B8A; --hot-bg:#3A1620;
+  --gold:#FFC65C; --gold-bg:#3A2C12;
+  --win:#3FD6A8; --win-bg:#0F332A;
+  --grape:#A98BFF; --grape-bg:#241A3D;
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -59,7 +72,10 @@ button{cursor:pointer;background:none;border:none;padding:0}
   border-bottom:1px solid var(--rule);padding:10px 16px 8px;
   display:flex;align-items:baseline;gap:8px}
 .topbar h1{margin:0;font-family:"Noto Serif TC",serif;font-weight:700;font-size:17px;letter-spacing:.02em}
-.topbar .sub{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint);margin-left:auto;letter-spacing:.04em}
+.topbar .sub{margin-left:auto;font-size:17px;line-height:1;width:40px;height:40px;
+  border-radius:999px;display:flex;align-items:center;justify-content:center;
+  transition:background-color .15s ease}
+.topbar .sub:hover{background:var(--sheet-2)}
 .main{flex:1;padding:14px 16px 92px}
 
 /* ── bottom nav ─────────────────────────────────────────────────────── */
@@ -96,6 +112,97 @@ p:last-child{margin-bottom:0}
 .block{background:var(--sheet);border:1px solid var(--rule);border-radius:4px;padding:14px}
 .block+.block{margin-top:10px}
 .block.tint{background:var(--sheet-2)}
+/* ══ 遊戲感：連續天數、XP、連對、彩帶、答題回饋 ══════════════════ */
+.confetti{position:fixed;inset:0;z-index:90;pointer-events:none}
+
+/* 練習時最上面那條：連續天數 · 今日目標 · 本輪 XP */
+.hud{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.hud .pill{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;
+  font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;border:1px solid transparent;white-space:nowrap}
+.hud .pill.fire{background:var(--gold-bg);color:var(--gold);border-color:var(--gold)}
+.hud .pill.xp{background:var(--grape-bg);color:var(--grape);border-color:var(--grape)}
+.hud .pill.combo{background:var(--hot-bg);color:var(--hot);border-color:var(--hot);
+  animation:pop .34s cubic-bezier(.2,1.6,.4,1)}
+.hud .spacer{flex:1}
+
+/* 進度條：每答一題就往前一格 */
+.bar-run{height:10px;border-radius:999px;background:var(--sheet-2);
+  border:1px solid var(--rule);overflow:hidden;flex:1}
+.bar-run i{display:block;height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--win),var(--teal));
+  transition:width .4s cubic-bezier(.2,.9,.3,1)}
+
+/* 答對／答錯的整頁閃動 */
+.flash{position:fixed;inset:0;z-index:80;pointer-events:none;opacity:0}
+.flash.ok{background:radial-gradient(circle at 50% 42%,var(--win-bg),transparent 62%);
+  animation:flashin .5s ease-out}
+.flash.bad{background:radial-gradient(circle at 50% 42%,var(--hot-bg),transparent 62%);
+  animation:flashin .5s ease-out}
+@keyframes flashin{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+
+/* 飛出來的 +XP */
+.xpfly{position:fixed;left:50%;top:96px;z-index:85;pointer-events:none;
+  transform:translateX(-50%);font-family:"IBM Plex Mono",monospace;
+  font-size:30px;font-weight:700;color:#FFFDF8;background:var(--win);
+  padding:4px 16px;border-radius:999px;white-space:nowrap;
+  box-shadow:0 6px 18px rgba(18,168,124,.35);
+  animation:fly 1s cubic-bezier(.2,.9,.3,1) forwards}
+@keyframes fly{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}
+  22%{opacity:1;transform:translate(-50%,-6px) scale(1.12)}
+  100%{opacity:0;transform:translate(-50%,-74px) scale(1)}}
+
+/* 答錯時題目輕輕搖一下 */
+.shake{animation:shake .38s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+/* 結算畫面 */
+.result{display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:26px 0 18px;text-align:center}
+.result .crown{font-size:56px;line-height:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.result h2{margin:0;font-family:"Noto Serif TC",serif;font-size:26px;font-weight:700}
+.result .sub{font-size:13.5px;color:var(--ink-soft)}
+.scoreboard{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-top:14px}
+.scoreboard>div{background:var(--sheet-2);border:1px solid var(--rule);border-radius:8px;
+  padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:3px}
+.scoreboard .n{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1}
+.scoreboard .n.gold{color:var(--gold)} .scoreboard .n.win{color:var(--win)}
+.scoreboard .n.grape{color:var(--grape)}
+.scoreboard .l{font-size:11px;color:var(--ink-soft)}
+
+/* 每日目標圈 */
+.goalring{display:flex;align-items:center;gap:12px}
+.goalring svg{flex:none;transform:rotate(-90deg)}
+.goalring .ring-bg{stroke:var(--sheet-2);fill:none;stroke-width:8}
+.goalring .ring-fg{stroke:var(--win);fill:none;stroke-width:8;stroke-linecap:round;
+  transition:stroke-dasharray .5s cubic-bezier(.2,.9,.3,1)}
+.goalring .ring-fg.done{stroke:var(--gold)}
+
+/* 連續天數大字 */
+.streakbig{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;
+  font-size:34px;font-weight:700;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
+.streakbig .flame{font-size:30px}
+.streakbig.cold{color:var(--ink-faint)}
+
+/* 主按鈕做大一點、按下去會凹 */
+.btn.primary{border-radius:12px;font-size:17px;min-height:52px;
+  box-shadow:0 3px 0 var(--teal-line);transition:transform .08s ease,box-shadow .08s ease}
+.btn.primary:active{transform:translateY(3px);box-shadow:0 0 0 var(--teal-line)}
+.btn.primary:disabled{box-shadow:none}
+
+/* 選項按下去有反應 */
+.opt{transition:border-color .15s ease,background-color .15s ease,transform .08s ease}
+.opt:active:not(:disabled){transform:scale(.985)}
+.opt.ok{animation:pop .34s cubic-bezier(.2,1.6,.4,1)}
+
+@media (prefers-reduced-motion:reduce){
+  .xpfly,.flash,.result .crown,.hud .pill.combo,.opt.ok{animation:none}
+  .shake{animation:none}
+}
+
 /* 首頁主卡：今天要做什麼 */
 .todo{background:var(--sheet-2);border:1px solid var(--rule);border-radius:6px;
   padding:14px;display:flex;flex-direction:column;gap:12px}
@@ -7724,16 +7831,71 @@ function daysBetween(a, b){
 function emptyCard(){
   return {seen:0, due:null, successDays:[],
     recall:{c:0, t:0}, select:{c:0, t:0}, recognition:{c:0, t:0}, application:{c:0, t:0},
-    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null};
+    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null, todayN:0};
 }
 /* 解法卡只有一種題型，所以只留 method 這一個計數桶 */
 function emptyMethod(){
   return {seen:0, due:null, successDays:[], method:{c:0, t:0},
-    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null};
+    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null, todayN:0};
 }
+var DAILY_GOAL = 20;                 /* 一天練 20 題就算達標，大約 8 分鐘 */
+var COMBO_STEPS = [3, 5, 10, 20];    /* 連對到這些數字會有一次額外的獎勵 */
 function emptyProgress(){
   return {version:PROGRESS_VERSION, cards:{}, methods:{}, recentWrong:[],
+    streak:{days:0, lastDay:null, best:0},
+    xp:{total:0, today:0, day:null},
+    goal:DAILY_GOAL, sound:true,
     createdAt:todayStr(), updatedAt:todayStr()};
+}
+
+/* ── 連續天數：今天練過就接上，斷一天就重來 ─────────────────────── */
+function touchStreak(progress){
+  if(!progress.streak) progress.streak = {days:0, lastDay:null, best:0};
+  var st = progress.streak, today = todayStr();
+  if(st.lastDay === today) return st;
+  st.days = (st.lastDay && daysBetween(st.lastDay, today) === 1) ? st.days + 1 : 1;
+  st.lastDay = today;
+  if(st.days > st.best) st.best = st.days;
+  return st;
+}
+/* 今天練了沒 */
+function practicedToday(progress){
+  return !!(progress.streak && progress.streak.lastDay === todayStr());
+}
+/* 連續天數會不會在今天斷掉 */
+function streakDays(progress){
+  var st = progress.streak;
+  if(!st || !st.lastDay) return 0;
+  var d = daysBetween(st.lastDay, todayStr());
+  return d <= 1 ? st.days : 0;      /* 昨天練的還算數，再久就斷了 */
+}
+
+/* ── XP：答對就加，連對愈多加愈多 ──────────────────────────────── */
+function xpFor(combo){ return 10 + Math.min(combo, 5) * 2; }
+function addXP(progress, n){
+  if(!progress.xp) progress.xp = {total:0, today:0, day:null};
+  var today = todayStr();
+  if(progress.xp.day !== today){ progress.xp.day = today; progress.xp.today = 0; }
+  progress.xp.today += n;
+  progress.xp.total += n;
+  return progress.xp.today;
+}
+function xpToday(progress){
+  return (progress.xp && progress.xp.day === todayStr()) ? progress.xp.today : 0;
+}
+function goalOf(progress){ return progress.goal || DAILY_GOAL; }
+/* 今天練了幾題（用 XP 反推太粗，另外數） */
+function answeredToday(progress){
+  var n = 0, today = todayStr();
+  ALL_CARDS.forEach(function(c){
+    var cp = progress.cards[c.id];
+    if(cp && cp.lastAt === today) n += cp.todayN || 0;
+  });
+  Object.keys(progress.methods || {}).forEach(function(id){
+    var mp = progress.methods[id];
+    if(mp && mp.lastAt === today) n += mp.todayN || 0;
+  });
+  return n;
 }
 function getMP(progress, id){
   if(!progress.methods) progress.methods = {};
@@ -7802,8 +7964,10 @@ function recordAnswer(progress, id, kind, correct, reason){
     progress.recentWrong.unshift({id:id, kind:kind, reason:reason || null, date:today});
     progress.recentWrong = progress.recentWrong.slice(0, 30);
   }
+  cp.todayN = (cp.lastAt === today ? (cp.todayN || 0) : 0) + 1;
   cp.lastResult = correct ? 'ok' : 'miss';
   cp.lastAt = today;
+  touchStreak(progress);
   progress.updatedAt = today;
   return cp;
 }
@@ -8030,6 +8194,7 @@ function normalizeProgress(raw){
     o.lapses = Math.max(0, Number(c.lapses) || 0);
     o.lastResult = (c.lastResult === 'ok' || c.lastResult === 'miss') ? c.lastResult : null;
     o.lastAt = typeof c.lastAt === 'string' ? c.lastAt : null;
+    o.todayN = Math.max(0, Number(c.todayN) || 0);
     if(c.reasons && typeof c.reasons === 'object'){
       Object.keys(c.reasons).forEach(function(r){
         if(REASON_LABEL[r]) o.reasons[r] = Math.max(0, Number(c.reasons[r]) || 0);
@@ -8037,6 +8202,31 @@ function normalizeProgress(raw){
     }
     out.cards[id] = o;
   });
+  /* 連續天數、XP、每日目標與音效設定 */
+  if(raw.streak && typeof raw.streak === 'object'){
+    var sd = Math.max(0, Number(raw.streak.days) || 0);
+    out.streak = {
+      days:Math.min(sd, 9999),
+      lastDay:(typeof raw.streak.lastDay === 'string' &&
+               /^\d{4}-\d{2}-\d{2}$/.test(raw.streak.lastDay)) ? raw.streak.lastDay : null,
+      best:Math.min(Math.max(0, Number(raw.streak.best) || 0), 9999)
+    };
+    if(out.streak.best < out.streak.days) out.streak.best = out.streak.days;
+    if(!out.streak.lastDay) out.streak.days = 0;
+  }
+  if(raw.xp && typeof raw.xp === 'object'){
+    out.xp = {
+      total:Math.max(0, Number(raw.xp.total) || 0),
+      today:Math.max(0, Number(raw.xp.today) || 0),
+      day:(typeof raw.xp.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.xp.day))
+        ? raw.xp.day : null
+    };
+    if(!out.xp.day) out.xp.today = 0;
+  }
+  var g = Number(raw.goal);
+  out.goal = (g >= 5 && g <= 200) ? Math.round(g) : DAILY_GOAL;
+  out.sound = raw.sound !== false;
+
   var meths = (raw.methods && typeof raw.methods === 'object') ? raw.methods : {};
   Object.keys(meths).forEach(function(id){
     if(!METHOD_BY_ID[id]) return;
@@ -8056,6 +8246,7 @@ function normalizeProgress(raw){
     o.lapses = Math.max(0, Number(c.lapses) || 0);
     o.lastResult = (c.lastResult === 'ok' || c.lastResult === 'miss') ? c.lastResult : null;
     o.lastAt = typeof c.lastAt === 'string' ? c.lastAt : null;
+    o.todayN = Math.max(0, Number(c.todayN) || 0);
     if(c.reasons && typeof c.reasons === 'object'){
       Object.keys(c.reasons).forEach(function(r){
         if(REASON_LABEL[r]) o.reasons[r] = Math.max(0, Number(c.reasons[r]) || 0);
@@ -8113,6 +8304,131 @@ var Store = {
     try { window.localStorage.removeItem(STORAGE_KEY); } catch(e){}
   }
 };
+/* ══════════════════════════════════════════════════════════════════════
+   即時回饋：音效與彩帶
+   音效用 Web Audio 當場合成，不載入任何外部音檔
+   AudioContext 只在第一次點擊（使用者操作）時才建立，不會自動播放
+   ══════════════════════════════════════════════════════════════════════ */
+var Sfx = {
+  ctx:null, on:true, failed:false,
+
+  ready:function(){
+    if(this.failed || !this.on) return null;
+    if(!this.ctx){
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC){ this.failed = true; return null; }
+        this.ctx = new AC();
+      } catch(e){ this.failed = true; return null; }
+    }
+    if(this.ctx.state === 'suspended'){ try { this.ctx.resume(); } catch(e){} }
+    return this.ctx;
+  },
+
+  /* 一個音：頻率、長度、波形、音量 */
+  tone:function(freq, start, dur, type, vol){
+    var ctx = this.ready();
+    if(!ctx) return;
+    try {
+      var t0 = ctx.currentTime + start;
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = type || 'triangle';
+      osc.frequency.setValueAtTime(freq, t0);
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(vol == null ? 0.16 : vol, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t0); osc.stop(t0 + dur + 0.02);
+    } catch(e){}
+  },
+
+  /* 答對：連對愈多音階愈高，做出「愈來愈爽」的感覺 */
+  ok:function(combo){
+    var step = Math.min(combo || 0, 8);
+    var base = 523.25 * Math.pow(2, step / 12);      /* 從 Do 往上爬半音 */
+    this.tone(base, 0, 0.14, 'triangle', 0.16);
+    this.tone(base * 1.5, 0.06, 0.16, 'triangle', 0.12);
+  },
+  /* 答錯：短促的低音，不刺耳也不羞辱 */
+  bad:function(){
+    this.tone(196, 0, 0.13, 'sine', 0.13);
+    this.tone(146.83, 0.07, 0.17, 'sine', 0.11);
+  },
+  /* 連對達標：一串上行音 */
+  combo:function(){
+    var n = [659.25, 783.99, 1046.5];
+    for(var i = 0; i < n.length; i++) this.tone(n[i], i * 0.055, 0.16, 'triangle', 0.13);
+  },
+  /* 一輪結束 */
+  done:function(){
+    var n = [523.25, 659.25, 783.99, 1046.5];
+    for(var i = 0; i < n.length; i++) this.tone(n[i], i * 0.085, 0.3, 'triangle', 0.15);
+  },
+  /* 連續天數 +1 */
+  streak:function(){
+    this.tone(880, 0, 0.12, 'square', 0.09);
+    this.tone(1174.66, 0.08, 0.14, 'square', 0.09);
+    this.tone(1567.98, 0.16, 0.26, 'triangle', 0.12);
+  }
+};
+
+/* ── 彩帶：一次性的 canvas 動畫，播完就把節點移除 ─────────────── */
+function confetti(opts){
+  opts = opts || {};
+  if(typeof document === 'undefined') return;
+  try {
+    if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  } catch(e){}
+  var cv = document.createElement('canvas');
+  cv.className = 'confetti';
+  cv.setAttribute('aria-hidden', 'true');
+  var w = window.innerWidth, hgt = window.innerHeight;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = w * dpr; cv.height = hgt * dpr;
+  cv.style.width = w + 'px'; cv.style.height = hgt + 'px';
+  document.body.appendChild(cv);
+  var ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  var COLORS = ['#FFD23F', '#FF4D6D', '#31D0AA', '#4CA5FF', '#B265FF'];
+  var n = opts.count || 90, parts = [], i;
+  for(i = 0; i < n; i++){
+    parts.push({
+      x:w * (0.15 + Math.random() * 0.7),
+      y:hgt * 0.32 + Math.random() * 40,
+      vx:(Math.random() - 0.5) * 9,
+      vy:-(7 + Math.random() * 9),
+      g:0.26 + Math.random() * 0.12,
+      rot:Math.random() * Math.PI,
+      vr:(Math.random() - 0.5) * 0.3,
+      w:5 + Math.random() * 6,
+      h:8 + Math.random() * 8,
+      c:COLORS[(Math.random() * COLORS.length) | 0]
+    });
+  }
+  var t0 = performance.now(), LIFE = 1900;
+  function frame(now){
+    var age = now - t0;
+    ctx.clearRect(0, 0, w, hgt);
+    var alive = 0;
+    for(i = 0; i < parts.length; i++){
+      var p = parts[i];
+      p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      p.vx *= 0.995;
+      if(p.y < hgt + 40) alive++;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - age / LIFE);
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.c;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    if(age < LIFE && alive > 0) requestAnimationFrame(frame);
+    else if(cv.parentNode) cv.parentNode.removeChild(cv);
+  }
+  requestAnimationFrame(frame);
+}
 /* ══════════════════════════════════════════════════════════════════════
    介面元件
    ══════════════════════════════════════════════════════════════════════ */
@@ -8333,14 +8649,20 @@ function SessionView(props){
     props.onSubmit(correct);
   }
 
+  var done = st.results.filter(function(x){ return x !== undefined; }).length;
+  var pct = Math.round(done / st.queue.length * 100);
   var head = h('div', null,
-    h('div', {className:'progressline', role:'progressbar',
-      'aria-valuenow':st.idx + 1, 'aria-valuemin':1, 'aria-valuemax':st.queue.length,
-      'aria-label':'練習進度'},
-      st.queue.map(function(item, i){
-        var cls = i < st.idx ? (st.results[i] === false ? 'miss' : 'done') : (i === st.idx ? 'now' : '');
-        return h('i', {key:i, className:cls});
-      })),
+    h('div', {className:'hud'},
+      h('span', {className:'pill fire', title:'連續天數'},
+        h('span', {'aria-hidden':'true'}, '🔥'), (props.streak || 0)),
+      h('span', {className:'bar-run', role:'progressbar',
+        'aria-valuenow':done, 'aria-valuemin':0, 'aria-valuemax':st.queue.length,
+        'aria-label':'本輪進度'},
+        h('i', {style:{width:pct + '%'}})),
+      st.combo >= 2
+        ? h('span', {className:'pill combo', key:'c' + st.combo}, '連對 ' + st.combo)
+        : h('span', {className:'pill xp'},
+            h('span', {'aria-hidden':'true'}, '⚡'), (st.gained || 0))),
     h('div', {style:{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'6px'}},
       h('span', {className:'eyebrow'}, KINDS[kind]),
       h('span', {className:'tiny muted', style:{marginLeft:'auto'}},
@@ -8350,7 +8672,10 @@ function SessionView(props){
     st.queue[st.idx].retry
       ? h('div', {className:'banner', style:{marginBottom:'10px'}},
           h('span', null, '↻'), h('span', null, '這張剛才答錯了，再練一次。'))
-      : null);
+      : null,
+    st.fx ? h('div', {className:'flash ' + st.fx, key:'fx' + st.idx + st.fx}) : null,
+    st.fx === 'ok' && st.fxXp
+      ? h('div', {className:'xpfly', key:'xp' + st.idx}, '+' + st.fxXp) : null);
 
   /* ① 作答狀態：不顯示公式與答案 */
   if(st.phase === 'answer' || st.phase === 'reason'){
@@ -8414,18 +8739,18 @@ function SessionView(props){
     h('span', {'aria-hidden':'true'}, correct ? '✓' : '✕'),
     h('span', null, correct ? '答對了。'
       : ('答錯了' + (st.reason ? '（' + REASON_LABEL[st.reason] + '）' : '') + '，看完解析再判斷熟悉度。')));
-  var confidence = h('div', {style:{marginTop:'20px', paddingTop:'16px',
-      borderTop:'1px solid var(--rule)'}},
-    h('h3', {style:{marginBottom:'10px'}},
-      isMethod ? '這個解法，你現在有多熟？' : '這張卡，你現在有多熟？'),
-    h('div', {className:'gap-s'},
-      [['no', '不會', '明天再出現'], ['maybe', '還不確定', '1、3、7 天後'],
-       ['yes', '會了', '3、7、14、30 天後']].map(function(o){
-        return h('button', {key:o[0], className:'opt', type:'button', style:{marginBottom:0},
-          onClick:function(){ props.onConfidence(o[0]); }},
-          h('span', {style:{flex:1, fontWeight:600}}, o[1]),
-          h('span', {className:'tiny muted'}, o[2]));
-      })));
+  /* 答完直接繼續，排程自動決定；真的沒把握才手動降級，不打斷節奏 */
+  var last = st.idx === st.queue.length - 1;
+  var confidence = h('div', null,
+    h('div', {className:'actionbar'},
+      h('button', {className:'btn primary', onClick:function(){ props.onConfidence(correct ? 'yes' : 'no'); }},
+        last ? '完成這一輪' : '繼續')),
+    correct
+      ? h('p', {className:'center', style:{marginTop:'2px'}},
+          h('button', {className:'tiny muted', style:{textDecoration:'underline'},
+            onClick:function(){ props.onConfidence('maybe'); }},
+            '其實還不太有把握，過幾天再考我'))
+      : null);
 
   if(isMethod){
     return h('div', null, head,
@@ -8553,33 +8878,36 @@ function HomeScreen(props){
   var total = ALL_NODES.length;
   var mastered = total - pending.length;
   var planned = Math.min(12, due.length || Math.min(8, pending.length));
-  var mins = Math.max(1, Math.round(planned * 25 / 60));
   var startedToday = totals.n > 0;
 
   return h('div', null,
-    /* ① 今天要做什麼 —— 整個畫面的主角，其餘都在它下面 */
+    /* ① 連續天數 + 今日目標：一眼看到「今天還差幾題」 */
     h('div', {className:'todo'},
-      h('div', {className:'todo-head'},
-        h('span', {className:'eyebrow'}, '今天的複習'),
-        h('span', {className:'eyebrow'}, todayStr())),
-      due.length > 0
-        ? h('div', {className:'todo-lead'},
-            h('div', {className:'big'}, due.length),
-            h('div', null,
-              h('div', {style:{fontWeight:700}}, '張卡今天到期'),
-              h('div', {className:'tiny muted'}, '這輪 ' + planned + ' 題，約 ' + mins + ' 分鐘')))
-        : h('div', {className:'todo-lead'},
-            h('div', {className:'big'}, Math.min(12, pending.length) || '✓'),
-            h('div', null,
-              h('div', {style:{fontWeight:700}},
-                pending.length ? '張還沒練熟的卡' : '全部練熟了'),
-              h('div', {className:'tiny muted'},
-                pending.length
-                  ? '今天沒有到期的，先認識新的公式與解法'
-                  : '可以隨機抽考自己，或等下一批複習到期'))),
+      h('div', {className:'goalring'},
+        (function(){
+          var r = 30, C = 2 * Math.PI * r;
+          var doneN = answeredToday(p), goal = goalOf(p);
+          var ratio = Math.min(1, goal ? doneN / goal : 0);
+          return h('svg', {width:72, height:72, viewBox:'0 0 72 72', 'aria-hidden':'true'},
+            h('circle', {className:'ring-bg', cx:36, cy:36, r:r}),
+            h('circle', {className:cx('ring-fg', ratio >= 1 ? 'done' : ''), cx:36, cy:36, r:r,
+              strokeDasharray:(C * ratio) + ' ' + C}));
+        })(),
+        h('div', {className:'stack-s'},
+          h('div', {className:cx('streakbig', practicedToday(p) ? '' : 'cold')},
+            h('span', {className:'flame', 'aria-hidden':'true'}, '🔥'),
+            streakDays(p),
+            h('span', {style:{fontSize:'14px', fontWeight:400, color:'var(--ink-soft)'}},
+              '天連續')),
+          h('div', {className:'tiny muted'},
+            practicedToday(p)
+              ? ('今天練了 ' + answeredToday(p) + ' / ' + goalOf(p) + ' 題' +
+                 (answeredToday(p) >= goalOf(p) ? '　✓ 達標' : ''))
+              : (streakDays(p) > 0 ? '今天還沒練，練一輪就能接上' : '練一輪就開始累積')))),
       h('button', {className:'btn primary', onClick:function(){ props.onStart('due'); },
         disabled:pending.length === 0 && due.length === 0},
-        due.length > 0 ? '開始複習' : (pending.length ? '開始練習' : '今天沒有待辦')),
+        due.length > 0 ? ('開始複習　' + planned + ' 題')
+                       : (pending.length ? ('開始練習　' + planned + ' 題') : '今天沒有待辦')),
       h('button', {className:'btn ghost', onClick:function(){ props.onStart('free'); }},
         '隨機抽考')),
 
@@ -8614,7 +8942,9 @@ function HomeScreen(props){
       : null,
 
     props.storeNote
-      ? h('p', {className:'emptyline', style:{marginTop:'18px'}}, props.storeNote)
+      ? h('div', {className:'banner red', style:{marginTop:'18px'}},
+          h('span', {'aria-hidden':'true'}, '⚠'),
+          h('span', null, h('b', null, '進度未保存　'), props.storeNote))
       : null,
 
     /* ④ 進度細節收在同一頁的底部，不再另開一個分頁 */
@@ -8947,11 +9277,14 @@ function ProgressPanel(props){
 }
 
 /* ── 應用程式根元件 ───────────────────────────────────────────────── */
-function makeSlot(queue, idx, results){
+function makeSlot(queue, idx, results, carry){
   var item = queue[idx], q = qFor(NODE_BY_ID[item.cardId], item.kind, item.qi);
+  carry = carry || {};
   return {queue:queue, idx:idx, phase:'answer', hint:0,
     filled:q.type === 'blank' ? q.blanks.map(function(){ return null; }) : [],
-    active:0, picked:null, num:'', reason:null, results:results || []};
+    active:0, picked:null, num:'', reason:null, results:results || [],
+    combo:carry.combo || 0, bestCombo:carry.bestCombo || 0,
+    gained:carry.gained || 0, fx:null, fxXp:0};
 }
 
 function App(){
@@ -8966,6 +9299,9 @@ function App(){
   var cfState = useState('todo'), cardFilter = cfState[0], setCardFilter = cfState[1];
   var qState = useState(''), query = qState[0], setQuery = qState[1];
   var sState = useState(null), session = sState[0], setSession = sState[1];
+  var sndState = useState(boot.current.sound !== false),
+      soundOn = sndState[0], setSoundOn = sndState[1];
+  Sfx.on = soundOn;
   var cState = useState(null), openCard = cState[0], setOpenCard = cState[1];
   var oState = useState(null), openMethod = oState[0], setOpenMethod = oState[1];
   var dState = useState(null), dialog = dState[0], setDialog = dState[1];
@@ -9013,10 +9349,19 @@ function App(){
   var cur = session && session.phase !== 'done' ? session.queue[session.idx] : null;
 
   function onSubmit(correct){
-    update(function(p){ recordAnswer(p, cur.cardId, cur.kind, correct, null); });
+    var combo = correct ? (session.combo || 0) + 1 : 0;
+    var gain = correct ? xpFor(combo - 1) : 0;
+    var hitStep = correct && COMBO_STEPS.indexOf(combo) >= 0;
+    update(function(p){
+      recordAnswer(p, cur.cardId, cur.kind, correct, null);
+      if(gain) addXP(p, gain);
+    });
+    if(correct){ hitStep ? Sfx.combo() : Sfx.ok(combo - 1); } else { Sfx.bad(); }
     setSession(function(s){
       var r = s.results.slice(); r[s.idx] = correct;
-      return Object.assign({}, s, {results:r, phase:correct ? 'explain' : 'reason'});
+      return Object.assign({}, s, {results:r, phase:correct ? 'explain' : 'reason',
+        combo:combo, bestCombo:Math.max(s.bestCombo || 0, combo),
+        gained:(s.gained || 0) + gain, fx:correct ? 'ok' : 'bad', fxXp:gain});
     });
   }
   function onToExplain(){
@@ -9031,10 +9376,12 @@ function App(){
       queue.splice(Math.min(s.idx + 3, queue.length), 0,
         {cardId:queue[s.idx].cardId, kind:queue[s.idx].kind, qi:queue[s.idx].qi, retry:true});
     }
-    var nextIdx = s.idx + 1, done = nextIdx >= queue.length;
+    var nextIdx = s.idx + 1, fin = nextIdx >= queue.length;
     update(function(p){ scheduleCard(p, s.queue[s.idx].cardId, conf, correct); });
-    setSession(done ? Object.assign({}, s, {queue:queue, phase:'done'})
-                    : makeSlot(queue, nextIdx, s.results));
+    if(fin){ Sfx.done(); confetti({count:110}); }
+    var carry = {combo:s.combo, bestCombo:s.bestCombo, gained:s.gained};
+    setSession(fin ? Object.assign({}, s, {queue:queue, phase:'done', fx:null})
+                   : makeSlot(queue, nextIdx, s.results, carry));
   }
   function onBlankClick(bi){
     setSession(function(s){
@@ -9064,27 +9411,46 @@ function App(){
 
   var body;
   if(session && session.phase === 'done'){
+    var sm = sessionSummary;
+    var rate = sm.n ? Math.round(sm.ok / sm.n * 100) : 0;
+    var perfect = sm.n > 0 && sm.miss === 0;
+    var goalHit = xpToday(progress) > 0 && answeredToday(progress) >= goalOf(progress);
     body = h('div', null,
-      h(SectionHead, {title:'這一輪結束'}),
-      h('div', {className:'block'},
-        h('div', {style:{display:'flex', gap:'16px', alignItems:'flex-end'}},
-          h('div', null, h('div', {className:'big'}, sessionSummary.ok + '/' + sessionSummary.n),
-            h('div', {className:'tiny muted'}, '答對題數')),
-          h('div', {style:{marginLeft:'auto', textAlign:'right'}},
-            h('div', {className:'big', style:{fontSize:'22px'}}, sessionSummary.miss),
-            h('div', {className:'tiny muted'}, '答錯（已排到明天）'))),
-        h('p', {className:'small muted', style:{marginTop:'12px'}},
-          '答錯的卡已經自動排進明天的複習清單；自評「還不確定」的卡會在 1、3、7 天後再出現。'),
-        h('div', {className:'btnrow'},
-          h('button', {className:'btn primary', onClick:function(){
-            setSession(null); setTab('home');
-          }}, '回到練習')),
-        h('div', {className:'btnrow'},
-          h('button', {className:'btn ghost', onClick:function(){
-            setSession(null); startSession('due');
-          }}, '再練一輪'))));
+      h('div', {className:'result'},
+        h('div', {className:'crown', 'aria-hidden':'true'},
+          perfect ? '🏆' : (rate >= 70 ? '🎉' : '💪')),
+        h('h2', null, perfect ? '全對！' : (rate >= 70 ? '這一輪不錯' : '練完了')),
+        h('div', {className:'sub'},
+          goalHit ? '今天的目標也達成了' : ('離今天的目標還差 ' +
+            Math.max(0, goalOf(progress) - answeredToday(progress)) + ' 題')),
+        h('div', {className:'scoreboard'},
+          h('div', null,
+            h('span', {className:'n win'}, sm.ok + '/' + sm.n),
+            h('span', {className:'l'}, '答對')),
+          h('div', null,
+            h('span', {className:'n grape'}, '+' + (session.gained || 0)),
+            h('span', {className:'l'}, '這輪 XP')),
+          h('div', null,
+            h('span', {className:'n gold'}, session.bestCombo || 0),
+            h('span', {className:'l'}, '最高連對')))),
+      h('div', {className:'panel', style:{marginTop:'16px'}},
+        h('div', {className:'streakbig'},
+          h('span', {className:'flame', 'aria-hidden':'true'}, '🔥'),
+          streakDays(progress),
+          h('span', {style:{fontSize:'14px', fontWeight:400, color:'var(--ink-soft)'}}, '天連續')),
+        h('p', {className:'tiny muted'},
+          sm.miss
+            ? ('答錯的 ' + sm.miss + ' 題已經排進明天，明天回來就會先看到它們。')
+            : '明天回來才不會斷掉連續天數。')),
+      h('div', {className:'actionbar'},
+        h('button', {className:'btn ghost', onClick:function(){
+          setSession(null); setTab('practice');
+        }}, '先休息'),
+        h('button', {className:'btn primary', onClick:function(){
+          setSession(null); startSession('due');
+        }}, '再來一輪')));
   } else if(session){
-    body = h(SessionView, {state:session,
+    body = h(SessionView, {state:session, streak:streakDays(progress),
       onSubmit:onSubmit, onToExplain:onToExplain, onConfidence:onConfidence,
       onBlankClick:onBlankClick, onToken:onToken,
       onPick:function(i){ setSession(function(s){ return Object.assign({}, s, {picked:i}); }); },
@@ -9108,8 +9474,14 @@ function App(){
   return h('div', {className:'app'},
     h('header', {className:'topbar'},
       h('h1', null, '會考數學公式教練'),
-      h('span', {className:'sub'}, session ? 'PRACTICE'
-        : (storeMode === 'local' ? '進度已保存' : '未保存'))),
+      h('button', {className:'sub', title:'音效開關',
+        'aria-label':soundOn ? '關閉音效' : '開啟音效',
+        onClick:function(){
+          var next = !soundOn;
+          setSoundOn(next); Sfx.on = next;
+          if(next) Sfx.ok(0);
+          update(function(pp){ pp.sound = next; });
+        }}, soundOn ? '🔊' : '🔇')),
     h('main', {className:'main'}, body),
     session ? null : h(BottomNav, {tab:tab, onTab:setTab}),
     toast ? h('div', {style:{position:'fixed', left:0, right:0, bottom:'70px', zIndex:50,

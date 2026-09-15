@@ -218,14 +218,20 @@ function SessionView(props){
     props.onSubmit(correct);
   }
 
+  var done = st.results.filter(function(x){ return x !== undefined; }).length;
+  var pct = Math.round(done / st.queue.length * 100);
   var head = h('div', null,
-    h('div', {className:'progressline', role:'progressbar',
-      'aria-valuenow':st.idx + 1, 'aria-valuemin':1, 'aria-valuemax':st.queue.length,
-      'aria-label':'練習進度'},
-      st.queue.map(function(item, i){
-        var cls = i < st.idx ? (st.results[i] === false ? 'miss' : 'done') : (i === st.idx ? 'now' : '');
-        return h('i', {key:i, className:cls});
-      })),
+    h('div', {className:'hud'},
+      h('span', {className:'pill fire', title:'連續天數'},
+        h('span', {'aria-hidden':'true'}, '🔥'), (props.streak || 0)),
+      h('span', {className:'bar-run', role:'progressbar',
+        'aria-valuenow':done, 'aria-valuemin':0, 'aria-valuemax':st.queue.length,
+        'aria-label':'本輪進度'},
+        h('i', {style:{width:pct + '%'}})),
+      st.combo >= 2
+        ? h('span', {className:'pill combo', key:'c' + st.combo}, '連對 ' + st.combo)
+        : h('span', {className:'pill xp'},
+            h('span', {'aria-hidden':'true'}, '⚡'), (st.gained || 0))),
     h('div', {style:{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'6px'}},
       h('span', {className:'eyebrow'}, KINDS[kind]),
       h('span', {className:'tiny muted', style:{marginLeft:'auto'}},
@@ -235,7 +241,10 @@ function SessionView(props){
     st.queue[st.idx].retry
       ? h('div', {className:'banner', style:{marginBottom:'10px'}},
           h('span', null, '↻'), h('span', null, '這張剛才答錯了，再練一次。'))
-      : null);
+      : null,
+    st.fx ? h('div', {className:'flash ' + st.fx, key:'fx' + st.idx + st.fx}) : null,
+    st.fx === 'ok' && st.fxXp
+      ? h('div', {className:'xpfly', key:'xp' + st.idx}, '+' + st.fxXp) : null);
 
   /* ① 作答狀態：不顯示公式與答案 */
   if(st.phase === 'answer' || st.phase === 'reason'){
@@ -299,18 +308,18 @@ function SessionView(props){
     h('span', {'aria-hidden':'true'}, correct ? '✓' : '✕'),
     h('span', null, correct ? '答對了。'
       : ('答錯了' + (st.reason ? '（' + REASON_LABEL[st.reason] + '）' : '') + '，看完解析再判斷熟悉度。')));
-  var confidence = h('div', {style:{marginTop:'20px', paddingTop:'16px',
-      borderTop:'1px solid var(--rule)'}},
-    h('h3', {style:{marginBottom:'10px'}},
-      isMethod ? '這個解法，你現在有多熟？' : '這張卡，你現在有多熟？'),
-    h('div', {className:'gap-s'},
-      [['no', '不會', '明天再出現'], ['maybe', '還不確定', '1、3、7 天後'],
-       ['yes', '會了', '3、7、14、30 天後']].map(function(o){
-        return h('button', {key:o[0], className:'opt', type:'button', style:{marginBottom:0},
-          onClick:function(){ props.onConfidence(o[0]); }},
-          h('span', {style:{flex:1, fontWeight:600}}, o[1]),
-          h('span', {className:'tiny muted'}, o[2]));
-      })));
+  /* 答完直接繼續，排程自動決定；真的沒把握才手動降級，不打斷節奏 */
+  var last = st.idx === st.queue.length - 1;
+  var confidence = h('div', null,
+    h('div', {className:'actionbar'},
+      h('button', {className:'btn primary', onClick:function(){ props.onConfidence(correct ? 'yes' : 'no'); }},
+        last ? '完成這一輪' : '繼續')),
+    correct
+      ? h('p', {className:'center', style:{marginTop:'2px'}},
+          h('button', {className:'tiny muted', style:{textDecoration:'underline'},
+            onClick:function(){ props.onConfidence('maybe'); }},
+            '其實還不太有把握，過幾天再考我'))
+      : null);
 
   if(isMethod){
     return h('div', null, head,

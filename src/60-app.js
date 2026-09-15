@@ -24,33 +24,36 @@ function HomeScreen(props){
   var total = ALL_NODES.length;
   var mastered = total - pending.length;
   var planned = Math.min(12, due.length || Math.min(8, pending.length));
-  var mins = Math.max(1, Math.round(planned * 25 / 60));
   var startedToday = totals.n > 0;
 
   return h('div', null,
-    /* ① 今天要做什麼 —— 整個畫面的主角，其餘都在它下面 */
+    /* ① 連續天數 + 今日目標：一眼看到「今天還差幾題」 */
     h('div', {className:'todo'},
-      h('div', {className:'todo-head'},
-        h('span', {className:'eyebrow'}, '今天的複習'),
-        h('span', {className:'eyebrow'}, todayStr())),
-      due.length > 0
-        ? h('div', {className:'todo-lead'},
-            h('div', {className:'big'}, due.length),
-            h('div', null,
-              h('div', {style:{fontWeight:700}}, '張卡今天到期'),
-              h('div', {className:'tiny muted'}, '這輪 ' + planned + ' 題，約 ' + mins + ' 分鐘')))
-        : h('div', {className:'todo-lead'},
-            h('div', {className:'big'}, Math.min(12, pending.length) || '✓'),
-            h('div', null,
-              h('div', {style:{fontWeight:700}},
-                pending.length ? '張還沒練熟的卡' : '全部練熟了'),
-              h('div', {className:'tiny muted'},
-                pending.length
-                  ? '今天沒有到期的，先認識新的公式與解法'
-                  : '可以隨機抽考自己，或等下一批複習到期'))),
+      h('div', {className:'goalring'},
+        (function(){
+          var r = 30, C = 2 * Math.PI * r;
+          var doneN = answeredToday(p), goal = goalOf(p);
+          var ratio = Math.min(1, goal ? doneN / goal : 0);
+          return h('svg', {width:72, height:72, viewBox:'0 0 72 72', 'aria-hidden':'true'},
+            h('circle', {className:'ring-bg', cx:36, cy:36, r:r}),
+            h('circle', {className:cx('ring-fg', ratio >= 1 ? 'done' : ''), cx:36, cy:36, r:r,
+              strokeDasharray:(C * ratio) + ' ' + C}));
+        })(),
+        h('div', {className:'stack-s'},
+          h('div', {className:cx('streakbig', practicedToday(p) ? '' : 'cold')},
+            h('span', {className:'flame', 'aria-hidden':'true'}, '🔥'),
+            streakDays(p),
+            h('span', {style:{fontSize:'14px', fontWeight:400, color:'var(--ink-soft)'}},
+              '天連續')),
+          h('div', {className:'tiny muted'},
+            practicedToday(p)
+              ? ('今天練了 ' + answeredToday(p) + ' / ' + goalOf(p) + ' 題' +
+                 (answeredToday(p) >= goalOf(p) ? '　✓ 達標' : ''))
+              : (streakDays(p) > 0 ? '今天還沒練，練一輪就能接上' : '練一輪就開始累積')))),
       h('button', {className:'btn primary', onClick:function(){ props.onStart('due'); },
         disabled:pending.length === 0 && due.length === 0},
-        due.length > 0 ? '開始複習' : (pending.length ? '開始練習' : '今天沒有待辦')),
+        due.length > 0 ? ('開始複習　' + planned + ' 題')
+                       : (pending.length ? ('開始練習　' + planned + ' 題') : '今天沒有待辦')),
       h('button', {className:'btn ghost', onClick:function(){ props.onStart('free'); }},
         '隨機抽考')),
 
@@ -85,7 +88,9 @@ function HomeScreen(props){
       : null,
 
     props.storeNote
-      ? h('p', {className:'emptyline', style:{marginTop:'18px'}}, props.storeNote)
+      ? h('div', {className:'banner red', style:{marginTop:'18px'}},
+          h('span', {'aria-hidden':'true'}, '⚠'),
+          h('span', null, h('b', null, '進度未保存　'), props.storeNote))
       : null,
 
     /* ④ 進度細節收在同一頁的底部，不再另開一個分頁 */
@@ -418,11 +423,14 @@ function ProgressPanel(props){
 }
 
 /* ── 應用程式根元件 ───────────────────────────────────────────────── */
-function makeSlot(queue, idx, results){
+function makeSlot(queue, idx, results, carry){
   var item = queue[idx], q = qFor(NODE_BY_ID[item.cardId], item.kind, item.qi);
+  carry = carry || {};
   return {queue:queue, idx:idx, phase:'answer', hint:0,
     filled:q.type === 'blank' ? q.blanks.map(function(){ return null; }) : [],
-    active:0, picked:null, num:'', reason:null, results:results || []};
+    active:0, picked:null, num:'', reason:null, results:results || [],
+    combo:carry.combo || 0, bestCombo:carry.bestCombo || 0,
+    gained:carry.gained || 0, fx:null, fxXp:0};
 }
 
 function App(){
@@ -437,6 +445,9 @@ function App(){
   var cfState = useState('todo'), cardFilter = cfState[0], setCardFilter = cfState[1];
   var qState = useState(''), query = qState[0], setQuery = qState[1];
   var sState = useState(null), session = sState[0], setSession = sState[1];
+  var sndState = useState(boot.current.sound !== false),
+      soundOn = sndState[0], setSoundOn = sndState[1];
+  Sfx.on = soundOn;
   var cState = useState(null), openCard = cState[0], setOpenCard = cState[1];
   var oState = useState(null), openMethod = oState[0], setOpenMethod = oState[1];
   var dState = useState(null), dialog = dState[0], setDialog = dState[1];
@@ -484,10 +495,19 @@ function App(){
   var cur = session && session.phase !== 'done' ? session.queue[session.idx] : null;
 
   function onSubmit(correct){
-    update(function(p){ recordAnswer(p, cur.cardId, cur.kind, correct, null); });
+    var combo = correct ? (session.combo || 0) + 1 : 0;
+    var gain = correct ? xpFor(combo - 1) : 0;
+    var hitStep = correct && COMBO_STEPS.indexOf(combo) >= 0;
+    update(function(p){
+      recordAnswer(p, cur.cardId, cur.kind, correct, null);
+      if(gain) addXP(p, gain);
+    });
+    if(correct){ hitStep ? Sfx.combo() : Sfx.ok(combo - 1); } else { Sfx.bad(); }
     setSession(function(s){
       var r = s.results.slice(); r[s.idx] = correct;
-      return Object.assign({}, s, {results:r, phase:correct ? 'explain' : 'reason'});
+      return Object.assign({}, s, {results:r, phase:correct ? 'explain' : 'reason',
+        combo:combo, bestCombo:Math.max(s.bestCombo || 0, combo),
+        gained:(s.gained || 0) + gain, fx:correct ? 'ok' : 'bad', fxXp:gain});
     });
   }
   function onToExplain(){
@@ -502,10 +522,12 @@ function App(){
       queue.splice(Math.min(s.idx + 3, queue.length), 0,
         {cardId:queue[s.idx].cardId, kind:queue[s.idx].kind, qi:queue[s.idx].qi, retry:true});
     }
-    var nextIdx = s.idx + 1, done = nextIdx >= queue.length;
+    var nextIdx = s.idx + 1, fin = nextIdx >= queue.length;
     update(function(p){ scheduleCard(p, s.queue[s.idx].cardId, conf, correct); });
-    setSession(done ? Object.assign({}, s, {queue:queue, phase:'done'})
-                    : makeSlot(queue, nextIdx, s.results));
+    if(fin){ Sfx.done(); confetti({count:110}); }
+    var carry = {combo:s.combo, bestCombo:s.bestCombo, gained:s.gained};
+    setSession(fin ? Object.assign({}, s, {queue:queue, phase:'done', fx:null})
+                   : makeSlot(queue, nextIdx, s.results, carry));
   }
   function onBlankClick(bi){
     setSession(function(s){
@@ -535,27 +557,46 @@ function App(){
 
   var body;
   if(session && session.phase === 'done'){
+    var sm = sessionSummary;
+    var rate = sm.n ? Math.round(sm.ok / sm.n * 100) : 0;
+    var perfect = sm.n > 0 && sm.miss === 0;
+    var goalHit = xpToday(progress) > 0 && answeredToday(progress) >= goalOf(progress);
     body = h('div', null,
-      h(SectionHead, {title:'這一輪結束'}),
-      h('div', {className:'block'},
-        h('div', {style:{display:'flex', gap:'16px', alignItems:'flex-end'}},
-          h('div', null, h('div', {className:'big'}, sessionSummary.ok + '/' + sessionSummary.n),
-            h('div', {className:'tiny muted'}, '答對題數')),
-          h('div', {style:{marginLeft:'auto', textAlign:'right'}},
-            h('div', {className:'big', style:{fontSize:'22px'}}, sessionSummary.miss),
-            h('div', {className:'tiny muted'}, '答錯（已排到明天）'))),
-        h('p', {className:'small muted', style:{marginTop:'12px'}},
-          '答錯的卡已經自動排進明天的複習清單；自評「還不確定」的卡會在 1、3、7 天後再出現。'),
-        h('div', {className:'btnrow'},
-          h('button', {className:'btn primary', onClick:function(){
-            setSession(null); setTab('home');
-          }}, '回到練習')),
-        h('div', {className:'btnrow'},
-          h('button', {className:'btn ghost', onClick:function(){
-            setSession(null); startSession('due');
-          }}, '再練一輪'))));
+      h('div', {className:'result'},
+        h('div', {className:'crown', 'aria-hidden':'true'},
+          perfect ? '🏆' : (rate >= 70 ? '🎉' : '💪')),
+        h('h2', null, perfect ? '全對！' : (rate >= 70 ? '這一輪不錯' : '練完了')),
+        h('div', {className:'sub'},
+          goalHit ? '今天的目標也達成了' : ('離今天的目標還差 ' +
+            Math.max(0, goalOf(progress) - answeredToday(progress)) + ' 題')),
+        h('div', {className:'scoreboard'},
+          h('div', null,
+            h('span', {className:'n win'}, sm.ok + '/' + sm.n),
+            h('span', {className:'l'}, '答對')),
+          h('div', null,
+            h('span', {className:'n grape'}, '+' + (session.gained || 0)),
+            h('span', {className:'l'}, '這輪 XP')),
+          h('div', null,
+            h('span', {className:'n gold'}, session.bestCombo || 0),
+            h('span', {className:'l'}, '最高連對')))),
+      h('div', {className:'panel', style:{marginTop:'16px'}},
+        h('div', {className:'streakbig'},
+          h('span', {className:'flame', 'aria-hidden':'true'}, '🔥'),
+          streakDays(progress),
+          h('span', {style:{fontSize:'14px', fontWeight:400, color:'var(--ink-soft)'}}, '天連續')),
+        h('p', {className:'tiny muted'},
+          sm.miss
+            ? ('答錯的 ' + sm.miss + ' 題已經排進明天，明天回來就會先看到它們。')
+            : '明天回來才不會斷掉連續天數。')),
+      h('div', {className:'actionbar'},
+        h('button', {className:'btn ghost', onClick:function(){
+          setSession(null); setTab('practice');
+        }}, '先休息'),
+        h('button', {className:'btn primary', onClick:function(){
+          setSession(null); startSession('due');
+        }}, '再來一輪')));
   } else if(session){
-    body = h(SessionView, {state:session,
+    body = h(SessionView, {state:session, streak:streakDays(progress),
       onSubmit:onSubmit, onToExplain:onToExplain, onConfidence:onConfidence,
       onBlankClick:onBlankClick, onToken:onToken,
       onPick:function(i){ setSession(function(s){ return Object.assign({}, s, {picked:i}); }); },
@@ -579,8 +620,14 @@ function App(){
   return h('div', {className:'app'},
     h('header', {className:'topbar'},
       h('h1', null, '會考數學公式教練'),
-      h('span', {className:'sub'}, session ? 'PRACTICE'
-        : (storeMode === 'local' ? '進度已保存' : '未保存'))),
+      h('button', {className:'sub', title:'音效開關',
+        'aria-label':soundOn ? '關閉音效' : '開啟音效',
+        onClick:function(){
+          var next = !soundOn;
+          setSoundOn(next); Sfx.on = next;
+          if(next) Sfx.ok(0);
+          update(function(pp){ pp.sound = next; });
+        }}, soundOn ? '🔊' : '🔇')),
     h('main', {className:'main'}, body),
     session ? null : h(BottomNav, {tab:tab, onTab:setTab}),
     toast ? h('div', {style:{position:'fixed', left:0, right:0, bottom:'70px', zIndex:50,

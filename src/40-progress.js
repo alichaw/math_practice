@@ -52,16 +52,71 @@ function daysBetween(a, b){
 function emptyCard(){
   return {seen:0, due:null, successDays:[],
     recall:{c:0, t:0}, select:{c:0, t:0}, recognition:{c:0, t:0}, application:{c:0, t:0},
-    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null};
+    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null, todayN:0};
 }
 /* 解法卡只有一種題型，所以只留 method 這一個計數桶 */
 function emptyMethod(){
   return {seen:0, due:null, successDays:[], method:{c:0, t:0},
-    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null};
+    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null, todayN:0};
 }
+var DAILY_GOAL = 20;                 /* 一天練 20 題就算達標，大約 8 分鐘 */
+var COMBO_STEPS = [3, 5, 10, 20];    /* 連對到這些數字會有一次額外的獎勵 */
 function emptyProgress(){
   return {version:PROGRESS_VERSION, cards:{}, methods:{}, recentWrong:[],
+    streak:{days:0, lastDay:null, best:0},
+    xp:{total:0, today:0, day:null},
+    goal:DAILY_GOAL, sound:true,
     createdAt:todayStr(), updatedAt:todayStr()};
+}
+
+/* ── 連續天數：今天練過就接上，斷一天就重來 ─────────────────────── */
+function touchStreak(progress){
+  if(!progress.streak) progress.streak = {days:0, lastDay:null, best:0};
+  var st = progress.streak, today = todayStr();
+  if(st.lastDay === today) return st;
+  st.days = (st.lastDay && daysBetween(st.lastDay, today) === 1) ? st.days + 1 : 1;
+  st.lastDay = today;
+  if(st.days > st.best) st.best = st.days;
+  return st;
+}
+/* 今天練了沒 */
+function practicedToday(progress){
+  return !!(progress.streak && progress.streak.lastDay === todayStr());
+}
+/* 連續天數會不會在今天斷掉 */
+function streakDays(progress){
+  var st = progress.streak;
+  if(!st || !st.lastDay) return 0;
+  var d = daysBetween(st.lastDay, todayStr());
+  return d <= 1 ? st.days : 0;      /* 昨天練的還算數，再久就斷了 */
+}
+
+/* ── XP：答對就加，連對愈多加愈多 ──────────────────────────────── */
+function xpFor(combo){ return 10 + Math.min(combo, 5) * 2; }
+function addXP(progress, n){
+  if(!progress.xp) progress.xp = {total:0, today:0, day:null};
+  var today = todayStr();
+  if(progress.xp.day !== today){ progress.xp.day = today; progress.xp.today = 0; }
+  progress.xp.today += n;
+  progress.xp.total += n;
+  return progress.xp.today;
+}
+function xpToday(progress){
+  return (progress.xp && progress.xp.day === todayStr()) ? progress.xp.today : 0;
+}
+function goalOf(progress){ return progress.goal || DAILY_GOAL; }
+/* 今天練了幾題（用 XP 反推太粗，另外數） */
+function answeredToday(progress){
+  var n = 0, today = todayStr();
+  ALL_CARDS.forEach(function(c){
+    var cp = progress.cards[c.id];
+    if(cp && cp.lastAt === today) n += cp.todayN || 0;
+  });
+  Object.keys(progress.methods || {}).forEach(function(id){
+    var mp = progress.methods[id];
+    if(mp && mp.lastAt === today) n += mp.todayN || 0;
+  });
+  return n;
 }
 function getMP(progress, id){
   if(!progress.methods) progress.methods = {};
@@ -130,8 +185,10 @@ function recordAnswer(progress, id, kind, correct, reason){
     progress.recentWrong.unshift({id:id, kind:kind, reason:reason || null, date:today});
     progress.recentWrong = progress.recentWrong.slice(0, 30);
   }
+  cp.todayN = (cp.lastAt === today ? (cp.todayN || 0) : 0) + 1;
   cp.lastResult = correct ? 'ok' : 'miss';
   cp.lastAt = today;
+  touchStreak(progress);
   progress.updatedAt = today;
   return cp;
 }
@@ -358,6 +415,7 @@ function normalizeProgress(raw){
     o.lapses = Math.max(0, Number(c.lapses) || 0);
     o.lastResult = (c.lastResult === 'ok' || c.lastResult === 'miss') ? c.lastResult : null;
     o.lastAt = typeof c.lastAt === 'string' ? c.lastAt : null;
+    o.todayN = Math.max(0, Number(c.todayN) || 0);
     if(c.reasons && typeof c.reasons === 'object'){
       Object.keys(c.reasons).forEach(function(r){
         if(REASON_LABEL[r]) o.reasons[r] = Math.max(0, Number(c.reasons[r]) || 0);
@@ -365,6 +423,31 @@ function normalizeProgress(raw){
     }
     out.cards[id] = o;
   });
+  /* 連續天數、XP、每日目標與音效設定 */
+  if(raw.streak && typeof raw.streak === 'object'){
+    var sd = Math.max(0, Number(raw.streak.days) || 0);
+    out.streak = {
+      days:Math.min(sd, 9999),
+      lastDay:(typeof raw.streak.lastDay === 'string' &&
+               /^\d{4}-\d{2}-\d{2}$/.test(raw.streak.lastDay)) ? raw.streak.lastDay : null,
+      best:Math.min(Math.max(0, Number(raw.streak.best) || 0), 9999)
+    };
+    if(out.streak.best < out.streak.days) out.streak.best = out.streak.days;
+    if(!out.streak.lastDay) out.streak.days = 0;
+  }
+  if(raw.xp && typeof raw.xp === 'object'){
+    out.xp = {
+      total:Math.max(0, Number(raw.xp.total) || 0),
+      today:Math.max(0, Number(raw.xp.today) || 0),
+      day:(typeof raw.xp.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.xp.day))
+        ? raw.xp.day : null
+    };
+    if(!out.xp.day) out.xp.today = 0;
+  }
+  var g = Number(raw.goal);
+  out.goal = (g >= 5 && g <= 200) ? Math.round(g) : DAILY_GOAL;
+  out.sound = raw.sound !== false;
+
   var meths = (raw.methods && typeof raw.methods === 'object') ? raw.methods : {};
   Object.keys(meths).forEach(function(id){
     if(!METHOD_BY_ID[id]) return;
@@ -384,6 +467,7 @@ function normalizeProgress(raw){
     o.lapses = Math.max(0, Number(c.lapses) || 0);
     o.lastResult = (c.lastResult === 'ok' || c.lastResult === 'miss') ? c.lastResult : null;
     o.lastAt = typeof c.lastAt === 'string' ? c.lastAt : null;
+    o.todayN = Math.max(0, Number(c.todayN) || 0);
     if(c.reasons && typeof c.reasons === 'object'){
       Object.keys(c.reasons).forEach(function(r){
         if(REASON_LABEL[r]) o.reasons[r] = Math.max(0, Number(c.reasons[r]) || 0);

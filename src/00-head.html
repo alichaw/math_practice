@@ -13,6 +13,11 @@
   --rule:#D9D2C4; --rule-soft:#E7E1D4;
   --focus:#0C7361;
   --shadow:0 1px 0 rgba(22,39,61,.06);
+  /* 遊戲感的重點色：取自學生常用的螢光筆 */
+  --hot:#E8365D; --hot-bg:#FFE8ED;
+  --gold:#F5A524; --gold-bg:#FFF3DC;
+  --win:#12A87C; --win-bg:#DCF6EE;
+  --grape:#7A4DE8; --grape-bg:#EFE8FF;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -24,6 +29,10 @@
     --rule:#2E3A45; --rule-soft:#26313A;
     --focus:#4FC3AB;
     --shadow:0 1px 0 rgba(0,0,0,.3);
+    --hot:#FF6B8A; --hot-bg:#3A1620;
+    --gold:#FFC65C; --gold-bg:#3A2C12;
+    --win:#3FD6A8; --win-bg:#0F332A;
+    --grape:#A98BFF; --grape-bg:#241A3D;
   }
 }
 :root[data-theme="dark"]{
@@ -35,6 +44,10 @@
   --rule:#2E3A45; --rule-soft:#26313A;
   --focus:#4FC3AB;
   --shadow:0 1px 0 rgba(0,0,0,.3);
+  --hot:#FF6B8A; --hot-bg:#3A1620;
+  --gold:#FFC65C; --gold-bg:#3A2C12;
+  --win:#3FD6A8; --win-bg:#0F332A;
+  --grape:#A98BFF; --grape-bg:#241A3D;
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -59,7 +72,10 @@ button{cursor:pointer;background:none;border:none;padding:0}
   border-bottom:1px solid var(--rule);padding:10px 16px 8px;
   display:flex;align-items:baseline;gap:8px}
 .topbar h1{margin:0;font-family:"Noto Serif TC",serif;font-weight:700;font-size:17px;letter-spacing:.02em}
-.topbar .sub{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint);margin-left:auto;letter-spacing:.04em}
+.topbar .sub{margin-left:auto;font-size:17px;line-height:1;width:40px;height:40px;
+  border-radius:999px;display:flex;align-items:center;justify-content:center;
+  transition:background-color .15s ease}
+.topbar .sub:hover{background:var(--sheet-2)}
 .main{flex:1;padding:14px 16px 92px}
 
 /* ── bottom nav ─────────────────────────────────────────────────────── */
@@ -96,6 +112,97 @@ p:last-child{margin-bottom:0}
 .block{background:var(--sheet);border:1px solid var(--rule);border-radius:4px;padding:14px}
 .block+.block{margin-top:10px}
 .block.tint{background:var(--sheet-2)}
+/* ══ 遊戲感：連續天數、XP、連對、彩帶、答題回饋 ══════════════════ */
+.confetti{position:fixed;inset:0;z-index:90;pointer-events:none}
+
+/* 練習時最上面那條：連續天數 · 今日目標 · 本輪 XP */
+.hud{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.hud .pill{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;
+  font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;border:1px solid transparent;white-space:nowrap}
+.hud .pill.fire{background:var(--gold-bg);color:var(--gold);border-color:var(--gold)}
+.hud .pill.xp{background:var(--grape-bg);color:var(--grape);border-color:var(--grape)}
+.hud .pill.combo{background:var(--hot-bg);color:var(--hot);border-color:var(--hot);
+  animation:pop .34s cubic-bezier(.2,1.6,.4,1)}
+.hud .spacer{flex:1}
+
+/* 進度條：每答一題就往前一格 */
+.bar-run{height:10px;border-radius:999px;background:var(--sheet-2);
+  border:1px solid var(--rule);overflow:hidden;flex:1}
+.bar-run i{display:block;height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--win),var(--teal));
+  transition:width .4s cubic-bezier(.2,.9,.3,1)}
+
+/* 答對／答錯的整頁閃動 */
+.flash{position:fixed;inset:0;z-index:80;pointer-events:none;opacity:0}
+.flash.ok{background:radial-gradient(circle at 50% 42%,var(--win-bg),transparent 62%);
+  animation:flashin .5s ease-out}
+.flash.bad{background:radial-gradient(circle at 50% 42%,var(--hot-bg),transparent 62%);
+  animation:flashin .5s ease-out}
+@keyframes flashin{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+
+/* 飛出來的 +XP */
+.xpfly{position:fixed;left:50%;top:96px;z-index:85;pointer-events:none;
+  transform:translateX(-50%);font-family:"IBM Plex Mono",monospace;
+  font-size:30px;font-weight:700;color:#FFFDF8;background:var(--win);
+  padding:4px 16px;border-radius:999px;white-space:nowrap;
+  box-shadow:0 6px 18px rgba(18,168,124,.35);
+  animation:fly 1s cubic-bezier(.2,.9,.3,1) forwards}
+@keyframes fly{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}
+  22%{opacity:1;transform:translate(-50%,-6px) scale(1.12)}
+  100%{opacity:0;transform:translate(-50%,-74px) scale(1)}}
+
+/* 答錯時題目輕輕搖一下 */
+.shake{animation:shake .38s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+/* 結算畫面 */
+.result{display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:26px 0 18px;text-align:center}
+.result .crown{font-size:56px;line-height:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.result h2{margin:0;font-family:"Noto Serif TC",serif;font-size:26px;font-weight:700}
+.result .sub{font-size:13.5px;color:var(--ink-soft)}
+.scoreboard{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-top:14px}
+.scoreboard>div{background:var(--sheet-2);border:1px solid var(--rule);border-radius:8px;
+  padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:3px}
+.scoreboard .n{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1}
+.scoreboard .n.gold{color:var(--gold)} .scoreboard .n.win{color:var(--win)}
+.scoreboard .n.grape{color:var(--grape)}
+.scoreboard .l{font-size:11px;color:var(--ink-soft)}
+
+/* 每日目標圈 */
+.goalring{display:flex;align-items:center;gap:12px}
+.goalring svg{flex:none;transform:rotate(-90deg)}
+.goalring .ring-bg{stroke:var(--sheet-2);fill:none;stroke-width:8}
+.goalring .ring-fg{stroke:var(--win);fill:none;stroke-width:8;stroke-linecap:round;
+  transition:stroke-dasharray .5s cubic-bezier(.2,.9,.3,1)}
+.goalring .ring-fg.done{stroke:var(--gold)}
+
+/* 連續天數大字 */
+.streakbig{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;
+  font-size:34px;font-weight:700;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
+.streakbig .flame{font-size:30px}
+.streakbig.cold{color:var(--ink-faint)}
+
+/* 主按鈕做大一點、按下去會凹 */
+.btn.primary{border-radius:12px;font-size:17px;min-height:52px;
+  box-shadow:0 3px 0 var(--teal-line);transition:transform .08s ease,box-shadow .08s ease}
+.btn.primary:active{transform:translateY(3px);box-shadow:0 0 0 var(--teal-line)}
+.btn.primary:disabled{box-shadow:none}
+
+/* 選項按下去有反應 */
+.opt{transition:border-color .15s ease,background-color .15s ease,transform .08s ease}
+.opt:active:not(:disabled){transform:scale(.985)}
+.opt.ok{animation:pop .34s cubic-bezier(.2,1.6,.4,1)}
+
+@media (prefers-reduced-motion:reduce){
+  .xpfly,.flash,.result .crown,.hud .pill.combo,.opt.ok{animation:none}
+  .shake{animation:none}
+}
+
 /* 首頁主卡：今天要做什麼 */
 .todo{background:var(--sheet-2);border:1px solid var(--rule);border-radius:6px;
   padding:14px;display:flex;flex-direction:column;gap:12px}
