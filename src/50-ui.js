@@ -240,7 +240,7 @@ function SessionView(props){
   /* ① 作答狀態：不顯示公式與答案 */
   if(st.phase === 'answer' || st.phase === 'reason'){
     return h('div', null, head,
-      h('div', {className:'block'},
+      h('div', {className:'panel'},
         h('h3', null, q.prompt),
         card.diagramType && !blind
           ? h('div', {style:{marginTop:'10px'}},
@@ -251,8 +251,8 @@ function SessionView(props){
                   h(DiagramSlot, {type:card.diagramType, data:card.diagramData,
                     highlight:true, reveal:false}))
               : null),
-        q.given ? h('div', {style:{marginTop:'8px'}}, h(MB, {t:q.given})) : null,
-        h('div', {style:{marginTop:'10px'}},
+        q.given ? h(MB, {t:q.given}) : null,
+        h('div', null,
           q.type === 'blank'
             ? h(BlankAnswer, {q:q, filled:st.filled, active:st.active, locked:locked,
                 onBlankClick:props.onBlankClick, onToken:props.onToken})
@@ -273,19 +273,19 @@ function SessionView(props){
                                : ('關鍵符號 ── ' + card.variables.map(function(v){
                                    return v.sym + '：' + v.desc; }).join('；')))) : null,
       st.phase === 'reason'
-        ? h('div', {className:'block', style:{marginTop:'10px'}},
-            h('div', {className:'banner red', style:{marginBottom:'10px'}},
+        ? h('div', null,
+            h('div', {className:'banner red', style:{marginTop:'14px'}},
               h('span', {'aria-hidden':'true'}, '✕'),
               h('span', null, '這題答錯了。選一個最主要的原因，之後會幫你追蹤。')),
-            h('div', {className:'chips'}, ERROR_REASONS.map(function(r){
+            h('div', {className:'chips', style:{marginTop:'10px'}}, ERROR_REASONS.map(function(r){
               return h('button', {key:r.id, className:'chip', type:'button',
                 'aria-pressed':st.reason === r.id,
                 onClick:function(){ props.onReason(r.id); }}, r.label);
             })),
-            h('div', {className:'btnrow'},
-              h('button', {className:'btn', disabled:!st.reason, onClick:props.onToExplain},
+            h('div', {className:'actionbar'},
+              h('button', {className:'btn primary', disabled:!st.reason, onClick:props.onToExplain},
                 '看解析')))
-        : h('div', {className:'btnrow'},
+        : h('div', {className:'actionbar'},
             st.hint < 2
               ? h('button', {className:'btn ghost', onClick:props.onHint},
                   st.hint === 0 ? '提示' : '再一個提示')
@@ -299,9 +299,11 @@ function SessionView(props){
     h('span', {'aria-hidden':'true'}, correct ? '✓' : '✕'),
     h('span', null, correct ? '答對了。'
       : ('答錯了' + (st.reason ? '（' + REASON_LABEL[st.reason] + '）' : '') + '，看完解析再判斷熟悉度。')));
-  var confidence = h('div', {className:'block', style:{marginTop:'10px'}},
-    h('div', {className:'eyebrow'}, isMethod ? '這個解法你現在的感覺' : '這張卡你現在的感覺'),
-    h('div', {className:'gap-s', style:{marginTop:'8px'}},
+  var confidence = h('div', {style:{marginTop:'20px', paddingTop:'16px',
+      borderTop:'1px solid var(--rule)'}},
+    h('h3', {style:{marginBottom:'10px'}},
+      isMethod ? '這個解法，你現在有多熟？' : '這張卡，你現在有多熟？'),
+    h('div', {className:'gap-s'},
       [['no', '不會', '明天再出現'], ['maybe', '還不確定', '1、3、7 天後'],
        ['yes', '會了', '3、7、14、30 天後']].map(function(o){
         return h('button', {key:o[0], className:'opt', type:'button', style:{marginBottom:0},
@@ -311,89 +313,102 @@ function SessionView(props){
       })));
 
   if(isMethod){
-    return h('div', null, head, banner,
-      h('div', {className:'block', style:{marginTop:'10px'}},
-        h('div', {className:'eyebrow'}, '題目會出現的線索'),
-        h('ul', {className:'plain small'}, card.clues.map(function(c, i){
-          return h('li', {key:i}, c);
-        })),
-        h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '關鍵關係'),
+    return h('div', null, head,
+      banner,
+      h('div', {className:'panel'},
+        h('h3', null, correct ? '這題的正解' : '正解是這個'),
+        h('div', {className:'banner teal'},
+          h('span', {'aria-hidden':'true'}, '→'),
+          h('span', null, renderAnswer(q))),
+        q.why ? h('p', {className:'small'}, q.why) : null),
+      h('div', {className:'panel'},
+        h('h3', null, '這類題目怎麼解'),
         h('p', {className:'small'}, card.relation),
-        h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '解題步驟'),
         h('ol', {className:'steps small'}, card.steps.map(function(x, i){
           return h('li', {key:i}, x);
         })),
-        h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '完整示範'),
-        h('div', {className:'rulebox'},
-          h('div', {className:'tiny muted', style:{marginBottom:'4px'}}, card.demo.title),
-          card.demo.given ? h(MB, {t:card.demo.given}) : null,
-          h('ol', {className:'steps small'}, card.demo.steps.map(function(x, i){
-            return h('li', {key:i}, h('div', {className:'tiny muted'}, x.label),
-              x.math ? h(MB, {t:x.math}) : h('div', null, x.text));
-          }))),
-        h('div', {className:'banner teal', style:{marginTop:'10px'}},
-          h('span', {'aria-hidden':'true'}, '＝'),
-          h('span', null, h('b', null, '示範答案：'), h(M, {t:card.demo.answer}))),
-        h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '本題正解'),
-        h('div', {className:'banner', style:{marginBottom:'8px'}},
-          h('span', {'aria-hidden':'true'}, '→'),
-          h('span', null, renderAnswer(q))),
-        q.why ? h('p', {className:'small'}, q.why) : null,
-        h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '常見錯法'),
-        h('ul', {className:'plain small'}, card.mistakes.map(function(x, i){
-          return h('li', {key:i}, x);
-        })),
-        h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '寫完怎麼檢查'),
-        h('ul', {className:'plain small'}, card.check.map(function(x, i){
-          return h('li', {key:i}, x);
-        }))),
+        h('div', {className:'banner'},
+          h('span', {'aria-hidden':'true'}, '🔑'),
+          h('span', null, h('b', null, '題目出現這些字就用它：'), card.clues.join('、')))),
+      h('details', {className:'more'},
+        h('summary', null, '完整示範、常見錯法、怎麼檢查'),
+        h('div', {className:'morebody'},
+          h('div', {className:'stack-s'},
+            h('div', {className:'eyebrow'}, '完整示範 ── ' + card.demo.title),
+            card.demo.given ? h(MB, {t:card.demo.given}) : null,
+            h('div', {className:'rulebox'},
+              h('ol', {className:'steps small'}, card.demo.steps.map(function(x, i){
+                return h('li', {key:i}, h('div', {className:'tiny muted'}, x.label),
+                  x.math ? h(MB, {t:x.math}) : h('div', null, x.text));
+              }))),
+            h('div', {className:'banner teal'},
+              h('span', {'aria-hidden':'true'}, '＝'),
+              h('span', null, h('b', null, '答案：'), h(M, {t:card.demo.answer})))),
+          h('div', {className:'stack-s'},
+            h('div', {className:'eyebrow'}, '常見錯法'),
+            h('ul', {className:'plain small'}, card.mistakes.map(function(x, i){
+              return h('li', {key:i}, x);
+            }))),
+          h('div', {className:'stack-s'},
+            h('div', {className:'eyebrow'}, '寫完怎麼檢查'),
+            h('ul', {className:'plain small'}, card.check.map(function(x, i){
+              return h('li', {key:i}, x);
+            }))))),
       confidence);
   }
 
+  /* 主角是「這一題為什麼這樣解」，其餘收進一個摺疊 */
+  var solution = kind === 'recall' ? null
+    : h('div', {className:'panel'},
+        h('h3', null, correct ? '這題的正解' : '正解是這個'),
+        h('div', {className:'banner teal'},
+          h('span', {'aria-hidden':'true'}, '→'),
+          h('span', null, renderAnswer(q))),
+        q.steps ? h('ol', {className:'steps small'}, q.steps.map(function(x, i){
+          return h('li', {key:i}, x);
+        })) : null,
+        q.why ? h('p', {className:'small'}, q.why) : null,
+        kind === 'select'
+          ? h('div', {className:'banner'},
+              h('span', {'aria-hidden':'true'}, '🔑'),
+              h('span', null, h('b', null, '下次怎麼認出來：'),
+                '題目出現「' + card.triggerWords.join('」「') + '」就往這條想。'))
+          : null);
+
   return h('div', null, head,
     banner,
-    h('div', {className:'block', style:{marginTop:'10px'}},
-      h('div', {className:'eyebrow'}, '完整公式'),
+    solution,
+    h('div', {className:'panel'},
+      h('h3', null, kind === 'recall' ? '要記住的就是這一條' : '用到的公式'),
       h(FormulaBox, {t:card.formula}),
-      card.diagramType ? h('div', {style:{marginTop:'10px'}},
-        h(DiagramSlot, {type:card.diagramType, data:card.diagramData,
-          highlight:false, reveal:true})) : null,
-      h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '每個符號的意思'),
-      h('ul', {className:'plain small'}, card.variables.map(function(v, i){
-        return h('li', {key:i}, h('b', null, v.sym), '：', v.desc);
-      })),
-      h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '代入過程'),
-      h('div', {className:'rulebox'},
-        h('div', {className:'tiny muted', style:{marginBottom:'4px'}}, card.workedExample.title),
-        h('ol', {className:'steps small'}, card.workedExample.steps.map(function(s, i){
-          return h('li', {key:i},
-            h('div', {className:'tiny muted'}, s.label),
-            s.math ? h(MB, {t:s.math}) : h('div', null, s.text));
-        }))),
-      h('div', {className:'banner teal', style:{marginTop:'10px'}},
-        h('span', {'aria-hidden':'true'}, '＝'),
-        h('span', null, h('b', null, '答案：'), h(M, {t:card.workedExample.answer}))),
-      kind !== 'recall'
-        ? h('div', null,
-            h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '本題正解'),
-            h('div', {className:'banner', style:{marginBottom:'8px'}},
-              h('span', {'aria-hidden':'true'}, '→'),
-              h('span', null, renderAnswer(q))),
-            q.steps ? h('ol', {className:'steps small'}, q.steps.map(function(s, i){
-              return h('li', {key:i}, s);
-            })) : null,
-            q.why ? h('p', {className:'small'}, q.why) : null)
+      card.diagramType
+        ? h(DiagramSlot, {type:card.diagramType, data:card.diagramData,
+            highlight:false, reveal:true})
         : null,
-      kind === 'select'
-        ? h('div', {className:'banner teal', style:{marginTop:'10px'}},
-            h('span', {'aria-hidden':'true'}, '🔑'),
-            h('span', null, h('b', null, '下次怎麼認出來：'),
-              '題目出現「' + card.triggerWords.join('」「') + '」就往這條想。'))
-        : null,
-      h('div', {className:'eyebrow', style:{marginTop:'12px'}}, '常見錯法'),
-      h('ul', {className:'plain small'}, card.commonMistakes.map(function(m, i){
-        return h('li', {key:i}, m);
-      })),
-      h('p', {className:'small muted', style:{marginTop:'10px'}}, card.explanation)),
+      h('p', {className:'small muted'}, card.explanation)),
+    h('details', {className:'more'},
+      h('summary', null, '完整示範、符號意思、常見錯法'),
+      h('div', {className:'morebody'},
+        h('div', {className:'stack-s'},
+          h('div', {className:'eyebrow'}, '每個符號的意思'),
+          h('ul', {className:'plain small'}, card.variables.map(function(v, i){
+            return h('li', {key:i}, h('b', null, v.sym), '：', v.desc);
+          }))),
+        h('div', {className:'stack-s'},
+          h('div', {className:'eyebrow'}, '完整示範 ── ' + card.workedExample.title),
+          h('div', {className:'rulebox'},
+            h('ol', {className:'steps small'}, card.workedExample.steps.map(function(x, i){
+              return h('li', {key:i},
+                h('div', {className:'tiny muted'}, x.label),
+                x.math ? h(MB, {t:x.math}) : h('div', null, x.text));
+            }))),
+          h('div', {className:'banner teal'},
+            h('span', {'aria-hidden':'true'}, '＝'),
+            h('span', null, h('b', null, '答案：'), h(M, {t:card.workedExample.answer})))),
+        h('div', {className:'stack-s'},
+          h('div', {className:'eyebrow'}, '常見錯法'),
+          h('ul', {className:'plain small'}, card.commonMistakes.map(function(m, i){
+            return h('li', {key:i}, m);
+          }))))),
     confidence);
 }

@@ -81,18 +81,69 @@ button{cursor:pointer;background:none;border:none;padding:0}
 /* ── structural type ────────────────────────────────────────────────── */
 .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
   letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint)}
-.secthead{display:flex;align-items:center;gap:10px;margin:22px 0 10px}
+.secthead{display:flex;align-items:baseline;gap:10px;margin:20px 0 8px}
 .secthead:first-child{margin-top:4px}
-.secthead .line{flex:1;height:1px;background:var(--rule)}
+.secthead .line{flex:1;height:1px;background:var(--rule-soft)}
+.secthead .right{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint)}
 .secthead h2{margin:0;font-family:"Noto Serif TC",serif;font-size:15px;font-weight:700;letter-spacing:.02em}
 h3{font-family:"Noto Serif TC",serif;font-size:15px;font-weight:700;margin:0;text-wrap:balance}
 p{margin:0 0 10px}
 p:last-child{margin-bottom:0}
 
 /* ── note block ─────────────────────────────────────────────────────── */
+/* 有邊框的盒子只留給「可以點的東西」與需要框住的作答區；
+   一般內容分段改用留白與細線，避免整頁都是小方塊 */
 .block{background:var(--sheet);border:1px solid var(--rule);border-radius:4px;padding:14px}
 .block+.block{margin-top:10px}
 .block.tint{background:var(--sheet-2)}
+/* 首頁主卡：今天要做什麼 */
+.todo{background:var(--sheet-2);border:1px solid var(--rule);border-radius:6px;
+  padding:14px;display:flex;flex-direction:column;gap:12px}
+.todo-head{display:flex;align-items:baseline;justify-content:space-between}
+.todo-lead{display:flex;align-items:center;gap:14px}
+.todo-lead .big{font-size:46px;color:var(--teal)}
+.todo .btn{width:100%}
+
+/* 沒有邊框的內容區段 */
+.panel{display:flex;flex-direction:column;gap:10px}
+.panel+.panel{margin-top:18px;padding-top:18px;border-top:1px solid var(--rule-soft)}
+.stack{display:flex;flex-direction:column;gap:10px}
+.stack-s{display:flex;flex-direction:column;gap:6px}
+/* 一句話的空狀態，不再佔一整個盒子 */
+.emptyline{font-size:12.5px;color:var(--ink-faint);padding:2px 0}
+
+/* 章節／原因：一行一條，名稱、數字、進度線並排 */
+.catrow{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline}
+.catrow .catname{font-size:13.5px}
+.catrow .catnum{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-soft);
+  font-variant-numeric:tabular-nums}
+.catrow .progressbar{grid-column:1/-1;margin-top:1px}
+.progressbar i.warn{background:var(--amber)}
+
+/* 卡片搜尋 */
+.search{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--rule);
+  border-radius:4px;background:var(--sheet);font-size:15px;margin-bottom:8px}
+.search::placeholder{color:var(--ink-faint)}
+
+/* 收合次要細節：一個畫面最多一個 */
+details.more{border-top:1px solid var(--rule-soft);margin-top:14px}
+details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;
+  padding:11px 0 10px;font-size:13px;font-weight:500;color:var(--ink-soft);min-height:44px}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::after{content:"";width:7px;height:7px;margin-left:auto;
+  border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+  transform:rotate(45deg) translateY(-2px);transition:transform .18s ease}
+details.more[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+details.more>summary:hover{color:var(--ink)}
+details.more .morebody{display:flex;flex-direction:column;gap:14px;padding-bottom:4px}
+
+/* 作答時的動作列釘在畫面底部，拇指按得到 */
+.actionbar{position:sticky;bottom:0;z-index:20;margin:14px -16px 0;padding:10px 16px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(to bottom,transparent,var(--sheet) 22%);
+  display:flex;gap:8px}
+.actionbar .btn{width:auto;flex:1}
+.actionbar .btn.ghost{flex:0 0 auto;min-width:96px}
 .rulebox{border-left:1px solid var(--rule);padding-left:14px;margin-left:3px}
 
 /* margin-rule list: real sequences only */
@@ -279,6 +330,21 @@ svg .dotT{fill:var(--teal)}
 .bar i{display:block;height:100%;background:var(--teal);transition:width .22s ease}
 .bar i.low{background:var(--amber)}
 .bar i.zero{background:var(--ink-faint)}
+/* 一組指標排成一列，而不是四個各自成塊 */
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;
+  background:var(--rule-soft);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.statgrid>div{background:var(--sheet);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.statgrid .n{font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:600;
+  font-variant-numeric:tabular-nums;line-height:1.15}
+.statgrid .n.weak{color:var(--amber)}
+.statgrid .n.none{color:var(--ink-faint)}
+.statgrid .l{font-size:11.5px;color:var(--ink-soft);line-height:1.35}
+
+/* 進度列：一條線就說完「練熟幾張」 */
+.progressbar{height:6px;border-radius:3px;background:var(--sheet-2);
+  border:1px solid var(--rule-soft);overflow:hidden}
+.progressbar i{display:block;height:100%;background:var(--teal);transition:width .25s ease}
+
 .kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
   border-bottom:1px solid var(--rule-soft);font-size:13.5px}
 .kv:last-child{border-bottom:none}
