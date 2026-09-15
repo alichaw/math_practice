@@ -54,8 +54,8 @@ function Modal(props){
       'aria-label':props.title, onClick:function(e){
         if(e.target === e.currentTarget) props.onClose();
       }},
-    h('div', {className:'modal'},
-      h('h3', {style:{marginBottom:'8px'}}, props.title),
+    h('div', {className:'modal stack'},
+      h('h3', null, props.title),
       props.children));
 }
 function FormulaBox(props){
@@ -111,10 +111,10 @@ function BlankAnswer(props){
   filled.forEach(function(v){ if(v) usedCount[v] = (usedCount[v] || 0) + 1; });
   function spent(tok){ return (usedCount[tok] || 0) >= (needCount[tok] || 1); }
   var repeated = Object.keys(needCount).some(function(k){ return needCount[k] > 1; });
-  return h('div', null,
+  return h('div', {className:'stack tight'},
     h('div', {className:'mwrap'}, h(M, {t:src, block:true, slots:slot})),
-    locked ? null : h('div', null,
-      h('div', {className:'eyebrow', style:{marginTop:'8px'}}, '公式積木'),
+    locked ? null : h('div', {className:'stack tight'},
+      h('div', {className:'eyebrow'}, '公式積木'),
       h('div', {className:'bank'}, q.bank.map(function(tok, i){
         var left = (needCount[tok] || 1) - (usedCount[tok] || 0);
         return h('button', {key:i, type:'button',
@@ -126,10 +126,10 @@ function BlankAnswer(props){
             ? h('span', {className:'x2'}, '×' + left) : null);
       }))),
     q.anyOrder && !locked
-      ? h('div', {className:'tiny muted', style:{marginTop:'6px'}}, '兩個空格的順序可以互換。')
+      ? h('div', {className:'tiny muted'}, '兩個空格的順序可以互換。')
       : null,
     repeated && !locked
-      ? h('div', {className:'tiny muted', style:{marginTop:'6px'}}, '同一塊積木可以重複使用，右上角的數字是還要再用幾次。')
+      ? h('div', {className:'tiny muted'}, '同一塊積木可以重複使用，右上角的數字是還要再用幾次。')
       : null);
 }
 
@@ -147,7 +147,7 @@ function ChoiceAnswer(props){
       'aria-pressed':picked === i, disabled:locked,
       onClick:function(){ props.onPick(i); }},
       h('span', {className:'key'}, OPT_KEYS[i]),
-      h('span', {style:{flex:1}}, o.math ? h(M, {t:o.math}) : o.t),
+      h('span', {className:'grow'}, o.math ? h(M, {t:o.math}) : o.t),
       locked && i === q.answer ? h('span', {className:'mark'}, '✓ 正解') : null,
       locked && i === picked && i !== q.answer ? h('span', {className:'mark'}, '✕ 你選的') : null);
   }));
@@ -169,7 +169,7 @@ function NumericAnswer(props){
       h('span', {style:{fontFamily:'"IBM Plex Mono",monospace', fontSize:'20px',
         fontVariantNumeric:'tabular-nums'}},
         val ? val.replace(/-/g, '−') : '　'),
-      props.unit ? h('span', {className:'muted small', style:{marginLeft:'6px'}}, props.unit) : null),
+      props.unit ? h('span', {className:'muted small unit'}, props.unit) : null),
     locked ? null : h('div', {className:'keypad'}, PAD.map(function(k){
       return h('button', {key:k, type:'button', onClick:function(){ press(k); },
         'aria-label':k === '⌫' ? '刪除一個字' : k,
@@ -224,7 +224,7 @@ function SessionView(props){
     h('div', {className:'hud'},
       h('span', {className:'pill fire', title:'連續天數'},
         h('span', {'aria-hidden':'true'}, '🔥'), (props.streak || 0)),
-      h('span', {className:'bar-run', role:'progressbar',
+      h('span', {className:'bar lg', role:'progressbar',
         'aria-valuenow':done, 'aria-valuemin':0, 'aria-valuemax':st.queue.length,
         'aria-label':'本輪進度'},
         h('i', {style:{width:pct + '%'}})),
@@ -232,14 +232,14 @@ function SessionView(props){
         ? h('span', {className:'pill combo', key:'c' + st.combo}, '連對 ' + st.combo)
         : h('span', {className:'pill xp'},
             h('span', {'aria-hidden':'true'}, '⚡'), (st.gained || 0))),
-    h('div', {style:{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'6px'}},
+    h('div', {className:'kindline'},
       h('span', {className:'eyebrow'}, KINDS[kind]),
-      h('span', {className:'tiny muted', style:{marginLeft:'auto'}},
+      h('span', {className:'tiny muted', className:'push'},
         (st.idx + 1) + ' / ' + st.queue.length),
-      h('button', {className:'tiny muted', style:{textDecoration:'underline'},
+      h('button', {className:'link',
         onClick:props.onQuit}, '結束')),
     st.queue[st.idx].retry
-      ? h('div', {className:'banner', style:{marginBottom:'10px'}},
+      ? h('div', {className:'banner'},
           h('span', null, '↻'), h('span', null, '這張剛才答錯了，再練一次。'))
       : null,
     st.fx ? h('div', {className:'flash ' + st.fx, key:'fx' + st.idx + st.fx}) : null,
@@ -252,11 +252,11 @@ function SessionView(props){
       h('div', {className:'panel'},
         h('h3', null, q.prompt),
         card.diagramType && !blind
-          ? h('div', {style:{marginTop:'10px'}},
+          ? h('div', null,
               h(DiagramSlot, {type:card.diagramType, data:card.diagramData,
                 highlight:st.hint >= 2, reveal:false}))
           : (card.diagramType && st.hint >= 2
-              ? h('div', {style:{marginTop:'10px'}},
+              ? h('div', null,
                   h(DiagramSlot, {type:card.diagramType, data:card.diagramData,
                     highlight:true, reveal:false}))
               : null),
@@ -268,11 +268,11 @@ function SessionView(props){
             : q.type === 'numeric'
               ? h(NumericAnswer, {value:st.num, unit:q.unit, locked:locked, onChange:props.onNum})
               : h(ChoiceAnswer, {q:q, picked:st.picked, locked:locked, onPick:props.onPick}))),
-      st.hint >= 1 ? h('div', {className:'banner', style:{marginTop:'10px'}},
+      st.hint >= 1 ? h('div', {className:'banner'},
         h('span', {'aria-hidden':'true'}, '①'),
         h('span', null, h('b', null, '提示一（使用時機）：'),
           q.hint1 || (isMethod ? card.clues.join('；') : card.usageConditions))) : null,
-      st.hint >= 2 ? h('div', {className:'banner teal', style:{marginTop:'8px'}},
+      st.hint >= 2 ? h('div', {className:'banner teal'},
         h('span', {'aria-hidden':'true'}, '②'),
         h('span', null, h('b', null, '提示二：'),
           isMethod ? ('第一步 ── ' + card.steps[0])
@@ -283,10 +283,10 @@ function SessionView(props){
                                    return v.sym + '：' + v.desc; }).join('；')))) : null,
       st.phase === 'reason'
         ? h('div', null,
-            h('div', {className:'banner red', style:{marginTop:'14px'}},
+            h('div', {className:'banner red'},
               h('span', {'aria-hidden':'true'}, '✕'),
               h('span', null, '這題答錯了。選一個最主要的原因，之後會幫你追蹤。')),
-            h('div', {className:'chips', style:{marginTop:'10px'}}, ERROR_REASONS.map(function(r){
+            h('div', {className:'chips'}, ERROR_REASONS.map(function(r){
               return h('button', {key:r.id, className:'chip', type:'button',
                 'aria-pressed':st.reason === r.id,
                 onClick:function(){ props.onReason(r.id); }}, r.label);
@@ -315,8 +315,8 @@ function SessionView(props){
       h('button', {className:'btn primary', onClick:function(){ props.onConfidence(correct ? 'yes' : 'no'); }},
         last ? '完成這一輪' : '繼續')),
     correct
-      ? h('p', {className:'center', style:{marginTop:'2px'}},
-          h('button', {className:'tiny muted', style:{textDecoration:'underline'},
+      ? h('p', {className:'center'},
+          h('button', {className:'link',
             onClick:function(){ props.onConfidence('maybe'); }},
             '其實還不太有把握，過幾天再考我'))
       : null);
@@ -342,7 +342,7 @@ function SessionView(props){
       h('details', {className:'more'},
         h('summary', null, '完整示範、常見錯法、怎麼檢查'),
         h('div', {className:'morebody'},
-          h('div', {className:'stack-s'},
+          h('div', {className:'stack tight'},
             h('div', {className:'eyebrow'}, '完整示範 ── ' + card.demo.title),
             card.demo.given ? h(MB, {t:card.demo.given}) : null,
             h('div', {className:'rulebox'},
@@ -353,12 +353,12 @@ function SessionView(props){
             h('div', {className:'banner teal'},
               h('span', {'aria-hidden':'true'}, '＝'),
               h('span', null, h('b', null, '答案：'), h(M, {t:card.demo.answer})))),
-          h('div', {className:'stack-s'},
+          h('div', {className:'stack tight'},
             h('div', {className:'eyebrow'}, '常見錯法'),
             h('ul', {className:'plain small'}, card.mistakes.map(function(x, i){
               return h('li', {key:i}, x);
             }))),
-          h('div', {className:'stack-s'},
+          h('div', {className:'stack tight'},
             h('div', {className:'eyebrow'}, '寫完怎麼檢查'),
             h('ul', {className:'plain small'}, card.check.map(function(x, i){
               return h('li', {key:i}, x);
@@ -398,12 +398,12 @@ function SessionView(props){
     h('details', {className:'more'},
       h('summary', null, '完整示範、符號意思、常見錯法'),
       h('div', {className:'morebody'},
-        h('div', {className:'stack-s'},
+        h('div', {className:'stack tight'},
           h('div', {className:'eyebrow'}, '每個符號的意思'),
           h('ul', {className:'plain small'}, card.variables.map(function(v, i){
             return h('li', {key:i}, h('b', null, v.sym), '：', v.desc);
           }))),
-        h('div', {className:'stack-s'},
+        h('div', {className:'stack tight'},
           h('div', {className:'eyebrow'}, '完整示範 ── ' + card.workedExample.title),
           h('div', {className:'rulebox'},
             h('ol', {className:'steps small'}, card.workedExample.steps.map(function(x, i){
@@ -414,7 +414,7 @@ function SessionView(props){
           h('div', {className:'banner teal'},
             h('span', {'aria-hidden':'true'}, '＝'),
             h('span', null, h('b', null, '答案：'), h(M, {t:card.workedExample.answer})))),
-        h('div', {className:'stack-s'},
+        h('div', {className:'stack tight'},
           h('div', {className:'eyebrow'}, '常見錯法'),
           h('ul', {className:'plain small'}, card.commonMistakes.map(function(m, i){
             return h('li', {key:i}, m);

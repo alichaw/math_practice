@@ -36,15 +36,17 @@ function HomeScreen(props){
           var ratio = Math.min(1, goal ? doneN / goal : 0);
           return h('svg', {width:72, height:72, viewBox:'0 0 72 72', 'aria-hidden':'true'},
             h('circle', {className:'ring-bg', cx:36, cy:36, r:r}),
-            h('circle', {className:cx('ring-fg', ratio >= 1 ? 'done' : ''), cx:36, cy:36, r:r,
-              strokeDasharray:(C * ratio) + ' ' + C}));
+            /* 進度 0 時不要畫，否則圓角端點會留下一個小點 */
+            ratio > 0
+              ? h('circle', {className:cx('ring-fg', ratio >= 1 ? 'done' : ''), cx:36, cy:36, r:r,
+                  strokeDasharray:(C * ratio) + ' ' + C})
+              : null);
         })(),
-        h('div', {className:'stack-s'},
+        h('div', {className:'stack tight'},
           h('div', {className:cx('streakbig', practicedToday(p) ? '' : 'cold')},
             h('span', {className:'flame', 'aria-hidden':'true'}, '🔥'),
             streakDays(p),
-            h('span', {style:{fontSize:'14px', fontWeight:400, color:'var(--ink-soft)'}},
-              '天連續')),
+            h('span', {className:'unit'}, '天連續')),
           h('div', {className:'tiny muted'},
             practicedToday(p)
               ? ('今天練了 ' + answeredToday(p) + ' / ' + goalOf(p) + ' 題' +
@@ -58,11 +60,11 @@ function HomeScreen(props){
         '隨機抽考')),
 
     /* ② 一條線說完整體進度 */
-    h('div', {className:'panel', style:{marginTop:'18px'}},
-      h('div', {className:'kv', style:{border:'none', padding:0}},
+    h('div', {className:'panel'},
+      h('div', {className:'kv plain'},
         h('span', {className:'small'}, '已練熟'),
         h('b', null, mastered + ' / ' + total)),
-      h('div', {className:'progressbar'},
+      h('div', {className:'bar'},
         h('i', {style:{width:Math.round(mastered / total * 100) + '%'}})),
       h('div', {className:'tiny muted'},
         '公式與性質 ' + ALL_CARDS.length + ' 張、常用解法 ' + METHODS.length + ' 張' +
@@ -73,10 +75,9 @@ function HomeScreen(props){
     weak.length
       ? h('div', {className:'panel'},
           h('h3', null, '最容易忘記'),
-          h('div', {className:'stack-s'}, weak.map(function(w){
+          h('div', {className:'stack tight'}, weak.map(function(w){
             var cp = p.cards[w.card.id];
             return h('button', {key:w.card.id, className:'row',
-              style:{marginBottom:0},
               onClick:function(){ props.onOpenCard(w.card.id); }},
               h('div', {className:'rtop'},
                 h('span', {className:'rtitle'}, w.card.title),
@@ -88,7 +89,7 @@ function HomeScreen(props){
       : null,
 
     props.storeNote
-      ? h('div', {className:'banner red', style:{marginTop:'18px'}},
+      ? h('div', {className:'banner red'},
           h('span', {'aria-hidden':'true'}, '⚠'),
           h('span', null, h('b', null, '進度未保存　'), props.storeNote))
       : null,
@@ -127,7 +128,7 @@ function CardsScreen(props){
     if(qq) list = list.filter(function(n){ return n.title.indexOf(qq) >= 0; });
   }
   return h('div', null,
-    h('div', {className:'chips', style:{marginBottom:'10px'}}, CARD_FILTERS.map(function(o){
+    h('div', {className:'chips'}, CARD_FILTERS.map(function(o){
       return h('button', {key:o.v, className:'chip', type:'button',
         'aria-pressed':f === o.v,
         onClick:function(){ props.onFilter(o.v); }}, o.t);
@@ -139,11 +140,11 @@ function CardsScreen(props){
     h('p', {className:'emptyline'},
       list.length + ' 張　·　點一張卡看內容，或直接練它'),
     list.length
-      ? h('div', {className:'stack-s'}, list.map(function(n){
+      ? h('div', {className:'stack tight'}, list.map(function(n){
           var isM = !!METHOD_BY_ID[n.id];
           var cp = npOf(p, n.id);
           var lvl = !cp || cp.seen === 0 ? 0 : (isNodeMastered(p, n) ? 2 : 1);
-          return h('button', {key:n.id, className:'row', style:{marginBottom:0},
+          return h('button', {key:n.id, className:'row',
             onClick:function(){ isM ? props.onOpenMethod(n.id) : props.onOpenCard(n.id); }},
             h('div', {className:'rtop'},
               h('span', {className:'rtitle'}, n.title),
@@ -153,7 +154,7 @@ function CardsScreen(props){
               h(MasteryDot, {level:lvl}),
               h('span', null, GRADES[n.grade] + '｜' + CATEGORIES[n.category]),
               cp && cp.lapses ? h('span', {className:'tag red'}, '錯 ' + cp.lapses) : null),
-            isM ? null : h('div', {style:{marginTop:'6px'}}, h(M, {t:n.formula, cls:'flow'})));
+            isM ? null : h('div', null, h(M, {t:n.formula, cls:'flow'})));
         }))
       : h('p', {className:'emptyline'}, '這個條件下沒有卡片。'));
 }
@@ -198,17 +199,17 @@ function CardDetail(props){
     h('details', {className:'more'},
       h('summary', null, '符號意思、完整示範、常見錯誤'),
       h('div', {className:'morebody'},
-        h('div', {className:'stack-s'},
+        h('div', {className:'stack tight'},
           h('div', {className:'eyebrow'}, '每個符號的意思'),
           h('ul', {className:'plain small'}, c.variables.map(function(v, i){
             return h('li', {key:i}, h('b', null, v.sym), '：', v.desc);
           }))),
         c.diagramExtra
-          ? h('div', {className:'stack-s'}, c.diagramExtra.map(function(d, i){
+          ? h('div', {className:'stack tight'}, c.diagramExtra.map(function(d, i){
               return h(DiagramSlot, {key:i, type:d.type, data:d.data, reveal:true});
             }))
           : null,
-        h('div', {className:'stack-s'},
+        h('div', {className:'stack tight'},
           h('div', {className:'eyebrow'}, '完整示範 ── ' + c.workedExample.title),
           h('div', {className:'rulebox'},
             h('ol', {className:'steps small'}, c.workedExample.steps.map(function(x, i){
@@ -218,7 +219,7 @@ function CardDetail(props){
           h('div', {className:'banner teal'},
             h('span', {'aria-hidden':'true'}, '＝'),
             h('span', null, h('b', null, '答案：'), h(M, {t:c.workedExample.answer})))),
-        h('div', {className:'stack-s'},
+        h('div', {className:'stack tight'},
           h('div', {className:'eyebrow'}, '常見錯誤'),
           h('ul', {className:'plain small'}, c.commonMistakes.map(function(m, i){
             return h('li', {key:i}, m);
@@ -236,8 +237,8 @@ function MethodDetail(props){
   var m = props.m;
   var mp = (props.progress.methods || {})[m.id] || emptyMethod();
   var st = useState(null), picked = st[0], setPicked = st[1];
-  return h('div', null,
-    h('div', {className:'tagrow', style:{marginBottom:'10px'}},
+  return h('div', {className:'stack loose'},
+    h('div', {className:'tagrow'},
       h(Tag, null, GRADES[m.grade]), h(Tag, null, CATEGORIES[m.category]),
       h(Tag, {tone:isMethodMastered(mp) ? 'teal' : ''},
         MASTERY_LABEL[mp.seen === 0 ? 0 : (isMethodMastered(mp) ? 2 : 1)])),
@@ -245,43 +246,42 @@ function MethodDetail(props){
     h('ul', {className:'plain small'}, m.clues.map(function(c, i){
       return h('li', {key:i}, c);
     })),
-    h('div', {className:'eyebrow', style:{marginTop:'14px'}}, '② 要建立的數學關係'),
+    h('div', {className:'eyebrow'}, '② 要建立的數學關係'),
     h('p', {className:'small'}, m.relation),
-    h('div', {className:'eyebrow', style:{marginTop:'14px'}}, '③ 解題步驟'),
+    h('div', {className:'eyebrow'}, '③ 解題步驟'),
     h('ol', {className:'steps small'}, m.steps.map(function(s, i){
       return h('li', {key:i}, s);
     })),
-    m.diagramType ? h('div', {style:{marginTop:'12px'}},
+    m.diagramType ? h('div', null,
       h(DiagramSlot, {type:m.diagramType, data:m.diagramData, reveal:true})) : null,
     m.diagramExtra ? m.diagramExtra.map(function(d, i){
-      return h('div', {key:i, style:{marginTop:'10px'}},
+      return h('div', {key:i},
         h(DiagramSlot, {type:d.type, data:d.data, reveal:true}));
     }) : null,
-    h('div', {className:'eyebrow', style:{marginTop:'14px'}}, '④ 完整示範'),
+    h('div', {className:'eyebrow'}, '④ 完整示範'),
     h('div', {className:'rulebox'},
-      h('div', {className:'tiny muted', style:{marginBottom:'4px'}}, m.demo.title),
+      h('div', {className:'tiny muted'}, m.demo.title),
       m.demo.given ? h(MB, {t:m.demo.given}) : null,
       h('ol', {className:'steps small'}, m.demo.steps.map(function(s, i){
         return h('li', {key:i}, h('div', {className:'tiny muted'}, s.label),
           s.math ? h(MB, {t:s.math}) : h('div', null, s.text));
       })),
-      h('div', {className:'small', style:{marginTop:'6px'}}, '答案：', h(M, {t:m.demo.answer}))),
-    h('div', {className:'eyebrow', style:{marginTop:'14px'}}, '⑤ 常見錯誤'),
+      h('div', {className:'small'}, '答案：', h(M, {t:m.demo.answer}))),
+    h('div', {className:'eyebrow'}, '⑤ 常見錯誤'),
     h('ul', {className:'plain small'}, m.mistakes.map(function(x, i){
       return h('li', {key:i}, x);
     })),
-    h('div', {className:'eyebrow', style:{marginTop:'14px'}}, '⑥ 檢查答案的方法'),
+    h('div', {className:'eyebrow'}, '⑥ 檢查答案的方法'),
     h('ul', {className:'plain small'}, m.check.map(function(x, i){
       return h('li', {key:i}, x);
     })),
     h('hr', {className:'rule'}),
     h('div', {className:'eyebrow'}, '⑦ 立即練習'),
-    h('p', {className:'small', style:{marginTop:'4px'}}, m.practice.prompt),
+    h('p', {className:'small'}, m.practice.prompt),
     h(ChoiceAnswer, {q:m.practice, picked:picked, locked:picked !== null,
       onPick:function(i){ setPicked(i); }}),
     picked !== null
-      ? h('div', {className:cx('banner', picked === m.practice.answer ? 'teal' : 'red'),
-          style:{marginTop:'10px'}},
+      ? h('div', {className:cx('banner', picked === m.practice.answer ? 'teal' : 'red')},
           h('span', {'aria-hidden':'true'}, picked === m.practice.answer ? '✓' : '✕'),
           h('span', null, m.practice.why))
       : null,
@@ -301,20 +301,6 @@ function MethodDetail(props){
     h('div', {className:'btnrow'},
       h('button', {className:'btn primary', onClick:function(){ props.onPractice(m); }},
         '排進複習並練一題')));
-}
-function Bar(props){
-  var pct = props.pct;
-  /* 錯誤原因用琥珀色，正確率／熟練度才用「愈綠愈好」的語意色 */
-  var cls = props.tone === 'warn' ? 'low' : pct === null ? 'zero' : pct >= 70 ? '' : 'low';
-  return h('div', {className:'bar'}, h('i', {className:cls, style:{width:(pct || 0) + '%'}}));
-}
-function KindMetric(props){
-  var s = props.stat;
-  return h('div', {className:'metric'},
-    h('span', {className:'name'}, props.label),
-    h('span', {className:'val'}, s.pct === null ? '—' : s.pct + '%'),
-    h('span', {className:'sub'}, s.t === 0 ? '尚未作答' : (s.c + ' / ' + s.t + ' 題答對')),
-    h(Bar, {pct:s.pct}));
 }
 function ProgressPanel(props){
   var p = props.progress;
@@ -347,29 +333,29 @@ function ProgressPanel(props){
         h('span', {className:'l'}, x[0] + (st.t ? '　' + st.c + '/' + st.t : '')));
     })),
     sel.t >= 5 && sel.pct !== null && sel.pct < 60
-      ? h('div', {className:'banner', style:{marginTop:'10px'}},
+      ? h('div', {className:'banner'},
           h('span', {'aria-hidden':'true'}, '🔑'),
           h('span', null, '「看題選公式」偏低代表公式背得起來、但看到題目想不到要用哪一條。' +
             '先把這一項練上來，應用題會跟著變順。'))
       : null,
 
-    h('div', {className:'eyebrow', style:{marginTop:'6px'}}, '各章節熟練度'),
-    h('div', {className:'stack-s'}, cats.map(function(c){
+    h('div', {className:'eyebrow'}, '各章節熟練度'),
+    h('div', {className:'stack tight'}, cats.map(function(c){
       return h('div', {key:c.key, className:'catrow'},
         h('span', {className:'catname'}, c.name),
         h('span', {className:'catnum'}, c.mastered + ' / ' + c.total),
-        h('span', {className:'progressbar'}, h('i', {style:{width:c.pct + '%'}})));
+        h('span', {className:'bar'}, h('i', {style:{width:c.pct + '%'}})));
     })),
 
     /* ③ 以下都只在有資料時才出現 */
     reasons.length
-      ? h('div', {className:'panel', style:{marginTop:'20px'}},
+      ? h('div', {className:'panel'},
           h('h3', null, '最常卡住的地方'),
-          h('div', {className:'stack-s'}, reasons.slice(0, 5).map(function(r){
+          h('div', {className:'stack tight'}, reasons.slice(0, 5).map(function(r){
             return h('div', {key:r.id, className:'catrow'},
               h('span', {className:'catname'}, r.label),
               h('span', {className:'catnum'}, r.n + ' 次'),
-              h('span', {className:'progressbar'},
+              h('span', {className:'bar'},
                 h('i', {className:'warn',
                   style:{width:Math.round(r.n / maxReason * 100) + '%'}})));
           })))
@@ -378,9 +364,9 @@ function ProgressPanel(props){
     p.recentWrong.length
       ? h('div', {className:'panel'},
           h('h3', null, '最近錯題'),
-          h('div', {className:'stack-s'}, p.recentWrong.slice(0, 6).map(function(w, i){
+          h('div', {className:'stack tight'}, p.recentWrong.slice(0, 6).map(function(w, i){
             var c = NODE_BY_ID[w.id];
-            return h('button', {key:i, className:'row', style:{marginBottom:0},
+            return h('button', {key:i, className:'row',
               onClick:function(){ METHOD_BY_ID[w.id] ? props.onOpenMethod(w.id)
                                                      : props.onOpenCard(w.id); }},
               h('div', {className:'rtop'},
@@ -396,8 +382,8 @@ function ProgressPanel(props){
       ? h('div', {className:'panel'},
           h('h3', null, '接下來的複習'),
           h('p', {className:'tiny muted'}, '到期當天首頁就會提醒你。'),
-          h('div', {className:'stack-s'}, plan.slice(0, 8).map(function(it){
-            return h('button', {key:it.card.id, className:'row', style:{marginBottom:0},
+          h('div', {className:'stack tight'}, plan.slice(0, 8).map(function(it){
+            return h('button', {key:it.card.id, className:'row',
               onClick:function(){ METHOD_BY_ID[it.card.id] ? props.onOpenMethod(it.card.id)
                                                            : props.onOpenCard(it.card.id); }},
               h('div', {className:'rtop'},
@@ -410,7 +396,7 @@ function ProgressPanel(props){
             : null)
       : null,
 
-    h('div', {className:'stack-s', style:{marginTop:'6px'}},
+    h('div', {className:'stack tight'},
           h('div', {className:'kv'}, h('span', null, '累計已練題數'), h('b', null, totals.n)),
           h('div', {className:'kv'}, h('span', null, '答對 / 答錯'),
             h('b', null, totals.ok + ' / ' + (totals.n - totals.ok))),
@@ -579,11 +565,11 @@ function App(){
           h('div', null,
             h('span', {className:'n gold'}, session.bestCombo || 0),
             h('span', {className:'l'}, '最高連對')))),
-      h('div', {className:'panel', style:{marginTop:'16px'}},
+      h('div', {className:'panel'},
         h('div', {className:'streakbig'},
           h('span', {className:'flame', 'aria-hidden':'true'}, '🔥'),
           streakDays(progress),
-          h('span', {style:{fontSize:'14px', fontWeight:400, color:'var(--ink-soft)'}}, '天連續')),
+          h('span', {className:'unit'}, '天連續')),
         h('p', {className:'tiny muted'},
           sm.miss
             ? ('答錯的 ' + sm.miss + ' 題已經排進明天，明天回來就會先看到它們。')
@@ -630,9 +616,8 @@ function App(){
         }}, soundOn ? '🔊' : '🔇')),
     h('main', {className:'main'}, body),
     session ? null : h(BottomNav, {tab:tab, onTab:setTab}),
-    toast ? h('div', {style:{position:'fixed', left:0, right:0, bottom:'70px', zIndex:50,
-        display:'flex', justifyContent:'center', pointerEvents:'none'}},
-        h('div', {className:'banner teal', style:{maxWidth:'400px'}},
+    toast ? h('div', {className:'toastwrap'},
+        h('div', {className:'banner teal'},
           h('span', {'aria-hidden':'true'}, 'ⓘ'), h('span', null, toast))) : null,
     cardObj ? h(Sheet, {title:cardObj.title, onClose:function(){ setOpenCard(null); }},
       h(CardDetail, {card:cardObj, progress:progress, onPractice:practiceOne})) : null,
@@ -644,7 +629,7 @@ function App(){
         h('button', {className:'btn ghost', onClick:function(){ setDialog(null); }}, '取消'),
         h('button', {className:'btn danger', onClick:function(){ setDialog('reset2'); }}, '繼續'))) : null,
     dialog === 'reset2' ? h(Modal, {title:'最後確認', onClose:function(){ setDialog(null); }},
-      h('div', {className:'banner red', style:{marginBottom:'10px'}},
+      h('div', {className:'banner red'},
         h('span', {'aria-hidden':'true'}, '！'),
         h('span', null, '按下「確定重設」後，' + Object.keys(progress.cards).length +
           ' 張卡的紀錄會全部歸零，而且無法復原。')),

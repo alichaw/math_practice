@@ -13,6 +13,24 @@
   --rule:#D9D2C4; --rule-soft:#E7E1D4;
   --focus:#0C7361;
   --shadow:0 1px 0 rgba(22,39,61,.06);
+
+  /* 間距：4 的倍數，全站只用這六個值 */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  /* 圓角：四階，依「這個東西有多大塊」選 */
+  --r1:4px;    /* 晶片、輸入框、清單列 */
+  --r2:8px;    /* 有份量的區塊 */
+  --r3:12px;   /* 主按鈕、主卡 */
+  --rf:999px;  /* 藥丸、進度條 */
+  /* 字級 */
+  --t-2xs:10.5px;  /* 全大寫小標 */
+  --t-xs:11.5px;   /* 註解、次要資訊 */
+  --t-sm:13px;     /* 小字內文 */
+  --t-md:15px;     /* 內文 */
+  --t-lg:17px;     /* 標題 */
+  --t-xl:22px;     /* 大標 */
+  --t-num:34px;    /* 儀表板數字 */
+  --t-hero:46px;   /* 首頁與結算的主數字 */
+
   /* 遊戲感的重點色：取自學生常用的螢光筆 */
   --hot:#E8365D; --hot-bg:#FFE8ED;
   --gold:#F5A524; --gold-bg:#FFF3DC;
@@ -55,12 +73,12 @@ html{-webkit-text-size-adjust:100%}
 body{
   margin:0; background:var(--paper); color:var(--ink);
   font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
-  font-size:15px; line-height:1.65; overflow-x:hidden;
+  font-size:var(--t-md); line-height:1.65; overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
 }
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:none;padding:0}
-:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:var(--r1)}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ── shell ──────────────────────────────────────────────────────────── */
@@ -70,10 +88,10 @@ button{cursor:pointer;background:none;border:none;padding:0}
 @media (max-width:479px){.app{border-left:none;border-right:none}}
 .topbar{position:sticky;top:0;z-index:30;background:var(--sheet);
   border-bottom:1px solid var(--rule);padding:10px 16px 8px;
-  display:flex;align-items:baseline;gap:8px}
-.topbar h1{margin:0;font-family:"Noto Serif TC",serif;font-weight:700;font-size:17px;letter-spacing:.02em}
-.topbar .sub{margin-left:auto;font-size:17px;line-height:1;width:40px;height:40px;
-  border-radius:999px;display:flex;align-items:center;justify-content:center;
+  display:flex;align-items:baseline;gap:var(--s2)}
+.topbar h1{margin:0;font-family:"Noto Serif TC",serif;font-weight:700;font-size:var(--t-lg);letter-spacing:.02em}
+.topbar .sub{margin-left:auto;font-size:var(--t-lg);line-height:1;width:40px;height:40px;
+  border-radius:var(--rf);display:flex;align-items:center;justify-content:center;
   transition:background-color .15s ease}
 .topbar .sub:hover{background:var(--sheet-2)}
 .main{flex:1;padding:14px 16px 92px}
@@ -83,42 +101,45 @@ button{cursor:pointer;background:none;border:none;padding:0}
   border-top:1px solid var(--rule);display:flex;
   max-width:460px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom,0)}
 .nav button{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:3px;color:var(--ink-soft);font-size:11px;letter-spacing:.02em;
+  justify-content:center;gap:var(--s1);color:var(--ink-soft);font-size:var(--t-xs);letter-spacing:.02em;
   border-top:2px solid transparent;margin-top:-1px;transition:color .18s ease,border-color .18s ease}
 .nav button[aria-current="page"]{color:var(--teal);border-top-color:var(--teal);font-weight:700}
 .nav svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
-.nav .badge{position:absolute;transform:translate(13px,-13px);background:var(--amber);
-  color:#FFF9EC;font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
-  min-width:16px;height:16px;line-height:16px;border-radius:8px;padding:0 4px}
-:root[data-theme="dark"] .nav .badge,
-:root:not([data-theme="light"]) .nav .badge{color:#1A1206}
 
 /* ── structural type ────────────────────────────────────────────────── */
-.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:var(--t-2xs);font-weight:600;
   letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint)}
-.secthead{display:flex;align-items:baseline;gap:10px;margin:20px 0 8px}
+.secthead{display:flex;align-items:baseline;gap:var(--s3);margin:20px 0 8px}
 .secthead:first-child{margin-top:4px}
 .secthead .line{flex:1;height:1px;background:var(--rule-soft)}
-.secthead .right{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint)}
-.secthead h2{margin:0;font-family:"Noto Serif TC",serif;font-size:15px;font-weight:700;letter-spacing:.02em}
-h3{font-family:"Noto Serif TC",serif;font-size:15px;font-weight:700;margin:0;text-wrap:balance}
+.kindline{display:flex;align-items:baseline;gap:var(--s2)}
+.toastwrap{position:fixed;left:0;right:0;bottom:70px;z-index:50;display:flex;
+  justify-content:center;pointer-events:none;padding:0 var(--s4)}
+.toastwrap>*{max-width:400px}
+.secthead .right{font-family:"IBM Plex Mono",monospace;font-size:var(--t-xs);color:var(--ink-faint)}
+.secthead h2{margin:0;font-family:"Noto Serif TC",serif;font-size:var(--t-md);font-weight:700;letter-spacing:.02em}
+h3{font-family:"Noto Serif TC",serif;font-size:var(--t-md);font-weight:700;margin:0;text-wrap:balance}
 p{margin:0 0 10px}
 p:last-child{margin-bottom:0}
 
 /* ── note block ─────────────────────────────────────────────────────── */
-/* 有邊框的盒子只留給「可以點的東西」與需要框住的作答區；
-   一般內容分段改用留白與細線，避免整頁都是小方塊 */
-.block{background:var(--sheet);border:1px solid var(--rule);border-radius:4px;padding:14px}
-.block+.block{margin-top:10px}
-.block.tint{background:var(--sheet-2)}
+/* ── 排版原語 ──────────────────────────────────────────────────
+   全站只有兩個：.stack 垂直堆疊、.panel 內容分段（堆疊 + 段間細線）。
+   間距一律用 --gap 調，不在元素上寫 margin。
+   有邊框的盒子只留給「可以點的東西」與需要框住的作答區。 */
+.stack{display:flex;flex-direction:column;gap:var(--gap,var(--s3))}
+.stack.tight{--gap:var(--s2)}
+.stack.loose{--gap:var(--s4)}
+.panel{display:flex;flex-direction:column;gap:var(--gap,var(--s3))}
+.panel+.panel{margin-top:var(--s5);padding-top:var(--s5);border-top:1px solid var(--rule-soft)}
 /* ══ 遊戲感：連續天數、XP、連對、彩帶、答題回饋 ══════════════════ */
 .confetti{position:fixed;inset:0;z-index:90;pointer-events:none}
 
 /* 練習時最上面那條：連續天數 · 今日目標 · 本輪 XP */
-.hud{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.hud .pill{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;
-  font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;
+.hud{display:flex;align-items:center;gap:var(--s3);margin-bottom:12px}
+.hud .pill{display:inline-flex;align-items:center;gap:var(--s1);padding:5px 11px;border-radius:var(--rf);
+  font-family:"IBM Plex Mono",monospace;font-size:var(--t-sm);font-weight:600;
   font-variant-numeric:tabular-nums;border:1px solid transparent;white-space:nowrap}
 .hud .pill.fire{background:var(--gold-bg);color:var(--gold);border-color:var(--gold)}
 .hud .pill.xp{background:var(--grape-bg);color:var(--grape);border-color:var(--grape)}
@@ -126,12 +147,6 @@ p:last-child{margin-bottom:0}
   animation:pop .34s cubic-bezier(.2,1.6,.4,1)}
 .hud .spacer{flex:1}
 
-/* 進度條：每答一題就往前一格 */
-.bar-run{height:10px;border-radius:999px;background:var(--sheet-2);
-  border:1px solid var(--rule);overflow:hidden;flex:1}
-.bar-run i{display:block;height:100%;border-radius:999px;
-  background:linear-gradient(90deg,var(--win),var(--teal));
-  transition:width .4s cubic-bezier(.2,.9,.3,1)}
 
 /* 答對／答錯的整頁閃動 */
 .flash{position:fixed;inset:0;z-index:80;pointer-events:none;opacity:0}
@@ -144,8 +159,8 @@ p:last-child{margin-bottom:0}
 /* 飛出來的 +XP */
 .xpfly{position:fixed;left:50%;top:96px;z-index:85;pointer-events:none;
   transform:translateX(-50%);font-family:"IBM Plex Mono",monospace;
-  font-size:30px;font-weight:700;color:#FFFDF8;background:var(--win);
-  padding:4px 16px;border-radius:999px;white-space:nowrap;
+  font-size:var(--t-num);font-weight:700;color:#FFFDF8;background:var(--win);
+  padding:4px 16px;border-radius:var(--rf);white-space:nowrap;
   box-shadow:0 6px 18px rgba(18,168,124,.35);
   animation:fly 1s cubic-bezier(.2,.9,.3,1) forwards}
 @keyframes fly{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}
@@ -159,36 +174,37 @@ p:last-child{margin-bottom:0}
 @keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
 
 /* 結算畫面 */
-.result{display:flex;flex-direction:column;align-items:center;gap:6px;
+.result{display:flex;flex-direction:column;align-items:center;gap:var(--s2);
   padding:26px 0 18px;text-align:center}
-.result .crown{font-size:56px;line-height:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
-.result h2{margin:0;font-family:"Noto Serif TC",serif;font-size:26px;font-weight:700}
-.result .sub{font-size:13.5px;color:var(--ink-soft)}
-.scoreboard{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-top:14px}
-.scoreboard>div{background:var(--sheet-2);border:1px solid var(--rule);border-radius:8px;
-  padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:3px}
-.scoreboard .n{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:700;
+.result .crown{font-size:var(--t-hero);line-height:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.result h2{margin:0;font-family:"Noto Serif TC",serif;font-size:var(--t-xl);font-weight:700}
+.result .sub{font-size:var(--t-sm);color:var(--ink-soft)}
+.scoreboard{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);width:100%;margin-top:14px}
+.scoreboard>div{background:var(--sheet-2);border:1px solid var(--rule);border-radius:var(--r2);
+  padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:var(--s1)}
+.scoreboard .n{font-family:"IBM Plex Mono",monospace;font-size:var(--t-xl);font-weight:700;
   font-variant-numeric:tabular-nums;line-height:1}
 .scoreboard .n.gold{color:var(--gold)} .scoreboard .n.win{color:var(--win)}
 .scoreboard .n.grape{color:var(--grape)}
-.scoreboard .l{font-size:11px;color:var(--ink-soft)}
+.scoreboard .l{font-size:var(--t-xs);color:var(--ink-soft)}
 
 /* 每日目標圈 */
-.goalring{display:flex;align-items:center;gap:12px}
+.goalring{display:flex;align-items:center;gap:var(--s3)}
 .goalring svg{flex:none;transform:rotate(-90deg)}
-.goalring .ring-bg{stroke:var(--sheet-2);fill:none;stroke-width:8}
+.goalring .ring-bg{stroke:var(--rule);fill:none;stroke-width:8}
 .goalring .ring-fg{stroke:var(--win);fill:none;stroke-width:8;stroke-linecap:round;
   transition:stroke-dasharray .5s cubic-bezier(.2,.9,.3,1)}
 .goalring .ring-fg.done{stroke:var(--gold)}
 
 /* 連續天數大字 */
-.streakbig{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;
-  font-size:34px;font-weight:700;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
-.streakbig .flame{font-size:30px}
+.streakbig{display:flex;align-items:center;gap:var(--s2);font-family:"IBM Plex Mono",monospace;
+  font-size:var(--t-num);font-weight:700;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
+.streakbig .flame{font-size:var(--t-num)}
+.streakbig .unit{font-size:var(--t-sm);font-weight:400;color:var(--ink-soft)}
 .streakbig.cold{color:var(--ink-faint)}
 
 /* 主按鈕做大一點、按下去會凹 */
-.btn.primary{border-radius:12px;font-size:17px;min-height:52px;
+.btn.primary{border-radius:var(--r3);font-size:var(--t-lg);min-height:52px;
   box-shadow:0 3px 0 var(--teal-line);transition:transform .08s ease,box-shadow .08s ease}
 .btn.primary:active{transform:translateY(3px);box-shadow:0 0 0 var(--teal-line)}
 .btn.primary:disabled{box-shadow:none}
@@ -204,51 +220,45 @@ p:last-child{margin-bottom:0}
 }
 
 /* 首頁主卡：今天要做什麼 */
-.todo{background:var(--sheet-2);border:1px solid var(--rule);border-radius:6px;
-  padding:14px;display:flex;flex-direction:column;gap:12px}
+.todo{background:var(--sheet-2);border:1px solid var(--rule);border-radius:var(--r2);
+  padding:14px;display:flex;flex-direction:column;gap:var(--s3)}
 .todo-head{display:flex;align-items:baseline;justify-content:space-between}
-.todo-lead{display:flex;align-items:center;gap:14px}
-.todo-lead .big{font-size:46px;color:var(--teal)}
+.todo-lead{display:flex;align-items:center;gap:var(--s4)}
+.todo-lead .big{font-size:var(--t-hero);color:var(--teal)}
 .todo .btn{width:100%}
 
-/* 沒有邊框的內容區段 */
-.panel{display:flex;flex-direction:column;gap:10px}
-.panel+.panel{margin-top:18px;padding-top:18px;border-top:1px solid var(--rule-soft)}
-.stack{display:flex;flex-direction:column;gap:10px}
-.stack-s{display:flex;flex-direction:column;gap:6px}
 /* 一句話的空狀態，不再佔一整個盒子 */
-.emptyline{font-size:12.5px;color:var(--ink-faint);padding:2px 0}
+.emptyline{font-size:var(--t-sm);color:var(--ink-faint);padding:2px 0}
 
 /* 章節／原因：一行一條，名稱、數字、進度線並排 */
-.catrow{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline}
-.catrow .catname{font-size:13.5px}
-.catrow .catnum{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-soft);
+.catrow{display:grid;grid-template-columns:1fr auto;gap:var(--s1) var(--s3);align-items:baseline}
+.catrow .catname{font-size:var(--t-sm)}
+.catrow .catnum{font-family:"IBM Plex Mono",monospace;font-size:var(--t-sm);color:var(--ink-soft);
   font-variant-numeric:tabular-nums}
-.catrow .progressbar{grid-column:1/-1;margin-top:1px}
-.progressbar i.warn{background:var(--amber)}
+.catrow .bar{grid-column:1/-1;margin-top:1px}
 
 /* 卡片搜尋 */
 .search{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--rule);
-  border-radius:4px;background:var(--sheet);font-size:15px;margin-bottom:8px}
+  border-radius:var(--r1);background:var(--sheet);font-size:var(--t-md);margin-bottom:8px}
 .search::placeholder{color:var(--ink-faint)}
 
 /* 收合次要細節：一個畫面最多一個 */
 details.more{border-top:1px solid var(--rule-soft);margin-top:14px}
-details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;
-  padding:11px 0 10px;font-size:13px;font-weight:500;color:var(--ink-soft);min-height:44px}
+details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:var(--s2);
+  padding:11px 0 10px;font-size:var(--t-sm);font-weight:500;color:var(--ink-soft);min-height:44px}
 details.more>summary::-webkit-details-marker{display:none}
 details.more>summary::after{content:"";width:7px;height:7px;margin-left:auto;
   border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
   transform:rotate(45deg) translateY(-2px);transition:transform .18s ease}
 details.more[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
 details.more>summary:hover{color:var(--ink)}
-details.more .morebody{display:flex;flex-direction:column;gap:14px;padding-bottom:4px}
+details.more .morebody{display:flex;flex-direction:column;gap:var(--s4);padding-bottom:4px}
 
 /* 作答時的動作列釘在畫面底部，拇指按得到 */
 .actionbar{position:sticky;bottom:0;z-index:20;margin:14px -16px 0;padding:10px 16px;
   padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(to bottom,transparent,var(--sheet) 22%);
-  display:flex;gap:8px}
+  display:flex;gap:var(--s2)}
 .actionbar .btn{width:auto;flex:1}
 .actionbar .btn.ghost{flex:0 0 auto;min-width:96px}
 .rulebox{border-left:1px solid var(--rule);padding-left:14px;margin-left:3px}
@@ -259,7 +269,7 @@ ol.steps::before{content:"";position:absolute;left:14px;top:4px;bottom:4px;width
 ol.steps li{position:relative;margin-bottom:10px}
 ol.steps li:last-child{margin-bottom:0}
 ol.steps li::before{content:counter(sc);counter-increment:sc;position:absolute;left:-30px;width:21px;
-  text-align:right;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+  text-align:right;font-family:"IBM Plex Mono",monospace;font-size:var(--t-xs);font-weight:600;
   color:var(--ink-faint);top:2px}
 /* 巢狀時只留外層的邊界線，避免兩條平行的直線 */
 .rulebox ol.steps{padding-left:26px}
@@ -272,19 +282,19 @@ ul.plain li:last-child{margin-bottom:0}
 ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;height:1px;background:var(--ink-faint)}
 
 /* ── tags ───────────────────────────────────────────────────────────── */
-.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;line-height:1.5;
-  padding:1px 7px;border-radius:3px;border:1px solid var(--rule);color:var(--ink-soft);
+.tag{display:inline-flex;align-items:center;gap:var(--s1);font-size:var(--t-xs);line-height:1.5;
+  padding:1px 7px;border-radius:var(--r1);border:1px solid var(--rule);color:var(--ink-soft);
   background:var(--sheet-2);white-space:nowrap}
 .tag.amber{color:var(--amber);border-color:var(--amber-line);background:var(--amber-bg)}
 .tag.teal{color:var(--teal);border-color:var(--teal-line);background:var(--teal-bg)}
 .tag.red{color:var(--red);border-color:var(--red-line);background:var(--red-bg)}
 .tag.ghost{background:transparent}
-.tagrow{display:flex;flex-wrap:wrap;gap:5px}
+.tagrow{display:flex;flex-wrap:wrap;gap:var(--s1)}
 
 /* ── buttons ────────────────────────────────────────────────────────── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  min-height:44px;padding:10px 16px;border-radius:4px;border:1px solid var(--ink);
-  background:var(--ink);color:var(--sheet);font-weight:700;font-size:15px;width:100%;
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);
+  min-height:44px;padding:10px 16px;border-radius:var(--r1);border:1px solid var(--ink);
+  background:var(--ink);color:var(--sheet);font-weight:700;font-size:var(--t-md);width:100%;
   transition:opacity .18s ease,background-color .18s ease}
 .btn:hover{opacity:.88}
 .btn.primary{background:var(--teal);border-color:var(--teal);color:#FBFEFD}
@@ -293,22 +303,22 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--rule);font-weight:500}
 .btn.danger{background:transparent;color:var(--red);border-color:var(--red-line);font-weight:500}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn.sm{min-height:36px;padding:6px 12px;font-size:13px;width:auto}
-.btnrow{display:flex;gap:8px;margin-top:10px}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:var(--t-sm);width:auto}
+.btnrow{display:flex;gap:var(--s2);margin-top:10px}
 .btnrow .btn{width:auto;flex:1}
 
 /* ── chips (filters, options, tokens) ───────────────────────────────── */
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{min-height:32px;padding:4px 11px;border:1px solid var(--rule);border-radius:16px;
-  font-size:12.5px;color:var(--ink-soft);background:var(--sheet);
+.chips{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.chip{min-height:32px;padding:4px 11px;border:1px solid var(--rule);border-radius:var(--rf);
+  font-size:var(--t-sm);color:var(--ink-soft);background:var(--sheet);
   transition:background-color .18s ease,color .18s ease,border-color .18s ease}
 .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--sheet);font-weight:500}
-.opt{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;
-  min-height:46px;padding:10px 12px;border:1px solid var(--rule);border-radius:4px;
+.opt{display:flex;align-items:flex-start;gap:var(--s3);width:100%;text-align:left;
+  min-height:46px;padding:10px 12px;border:1px solid var(--rule);border-radius:var(--r1);
   background:var(--sheet);margin-bottom:8px;transition:border-color .18s ease,background-color .18s ease}
 .opt:last-child{margin-bottom:0}
-.opt .key{flex:none;width:20px;height:20px;border:1px solid var(--rule);border-radius:3px;
-  font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;line-height:19px;
+.opt .key{flex:none;width:20px;height:20px;border:1px solid var(--rule);border-radius:var(--r1);
+  font-family:"IBM Plex Mono",monospace;font-size:var(--t-xs);font-weight:600;line-height:19px;
   text-align:center;color:var(--ink-soft);margin-top:2px}
 .opt[aria-pressed="true"]{border-color:var(--ink);background:var(--sheet-2)}
 .opt[aria-pressed="true"] .key{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
@@ -316,7 +326,7 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .opt.ok .key{background:var(--teal);border-color:var(--teal);color:#FBFEFD}
 .opt.bad{border-color:var(--red);background:var(--red-bg)}
 .opt.bad .key{background:var(--red);border-color:var(--red);color:#FFF6F5}
-.opt .mark{margin-left:auto;font-size:12px;font-weight:700;white-space:nowrap;padding-left:8px}
+.opt .mark{margin-left:auto;font-size:var(--t-sm);font-weight:700;white-space:nowrap;padding-left:8px}
 .opt.ok .mark{color:var(--teal)}
 .opt.bad .mark{color:var(--red)}
 
@@ -355,15 +365,15 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .m.flow>span{white-space:normal}
 .m.flow .frac,.m.flow .sqrt,.m.flow .ovl,.m.flow .sc{white-space:nowrap}
 .mwrap{overflow-x:auto;max-width:100%}
-.formula-card{background:var(--sheet-2);border:1px solid var(--rule);border-radius:4px;
+.formula-card{background:var(--sheet-2);border:1px solid var(--rule);border-radius:var(--r1);
   padding:6px 10px;margin:2px 0}
 .formula-card.hidden{background:repeating-linear-gradient(135deg,var(--sheet-2),var(--sheet-2) 6px,var(--sheet) 6px,var(--sheet) 12px);
-  color:var(--ink-faint);text-align:center;padding:14px 10px;font-size:13px}
+  color:var(--ink-faint);text-align:center;padding:14px 10px;font-size:var(--t-sm)}
 
 /* ── blanks / token bank ────────────────────────────────────────────── */
 .blank{display:inline-flex;align-items:center;justify-content:center;
   min-width:50px;min-height:34px;padding:2px 8px;margin:0 3px;
-  border:1px dashed var(--ink-faint);border-radius:3px;background:var(--sheet);
+  border:1px dashed var(--ink-faint);border-radius:var(--r1);background:var(--sheet);
   vertical-align:middle;line-height:1.2;
   transition:border-color .18s ease,background-color .18s ease}
 /* 空格出現在分數、根號或指數裡時要縮小，但仍保持完整可讀 */
@@ -374,31 +384,32 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .blank.filled{border-style:solid;border-color:var(--rule)}
 .blank.ok{border-color:var(--teal);background:var(--teal-bg)}
 .blank.bad{border-color:var(--red);background:var(--red-bg)}
-.bank{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
-.token{min-height:40px;padding:5px 13px;border:1px solid var(--rule);border-radius:4px;
+.bank{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:12px}
+.token{min-height:40px;padding:5px 13px;border:1px solid var(--rule);border-radius:var(--r1);
   background:var(--sheet-2);transition:transform .18s ease,opacity .18s ease}
 .token:active{transform:translateY(1px)}
 .token.used{opacity:.32;pointer-events:none}
 /* 需要重複使用的積木，右上角標還要再用幾次 */
 .token{position:relative}
 .token .x2{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;line-height:17px;
-  border-radius:9px;background:var(--teal);color:#FBFEFD;font-family:"IBM Plex Mono",monospace;
-  font-size:10px;font-weight:600;text-align:center;padding:0 3px}
+  border-radius:var(--rf);background:var(--teal);color:#FBFEFD;font-family:"IBM Plex Mono",monospace;
+  font-size:var(--t-2xs);font-weight:600;text-align:center;padding:0 3px}
 :root[data-theme="dark"] .token .x2,
 :root:not([data-theme="light"]) .token .x2{color:#0B1F1A}
-.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
-.keypad button{min-height:44px;border:1px solid var(--rule);border-radius:4px;
-  background:var(--sheet-2);font-family:"IBM Plex Mono",monospace;font-size:16px}
-.numview{min-height:46px;border:1px solid var(--rule);border-radius:4px;background:var(--sheet);
+.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2);margin-top:12px}
+.keypad button{min-height:44px;border:1px solid var(--rule);border-radius:var(--r1);
+  background:var(--sheet-2);font-family:"IBM Plex Mono",monospace;font-size:var(--t-lg)}
+.numview .unit{margin-left:var(--s2)}
+.numview{min-height:46px;border:1px solid var(--rule);border-radius:var(--r1);background:var(--sheet);
   display:flex;align-items:center;justify-content:center;padding:6px 12px;margin-top:4px}
 
 /* ── figures ────────────────────────────────────────────────────────── */
-.figure{border:1px solid var(--rule);border-radius:4px;padding:6px;background:var(--sheet);
+.figure{border:1px solid var(--rule);border-radius:var(--r1);padding:6px;background:var(--sheet);
   background-image:linear-gradient(var(--rule-soft) 1px,transparent 1px),
     linear-gradient(90deg,var(--rule-soft) 1px,transparent 1px);
   background-size:16px 16px;background-position:-1px -1px}
 .figure svg{display:block;width:100%;height:auto}
-.figcap{font-size:11.5px;color:var(--ink-soft);padding:6px 4px 2px;line-height:1.5;text-align:center}
+.figcap{font-size:var(--t-xs);color:var(--ink-soft);padding:6px 4px 2px;line-height:1.5;text-align:center}
 svg .stk{stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
 svg .thin{stroke:var(--ink-soft);fill:none;stroke-width:1;stroke-linecap:round}
 svg .dash{stroke:var(--ink-soft);fill:none;stroke-width:1.2;stroke-dasharray:4 3;stroke-linecap:round}
@@ -406,9 +417,9 @@ svg .hl{stroke:var(--amber);stroke-width:3.4;fill:none;stroke-linecap:round;stro
 svg .hl2{stroke:var(--teal);stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .fillA{fill:var(--amber-bg);stroke:var(--amber-line);stroke-width:1}
 svg .fillT{fill:var(--teal-bg);stroke:var(--teal-line);stroke-width:1}
-svg text{font-family:"IBM Plex Mono","Noto Sans TC",monospace;font-size:11px;fill:var(--ink)}
-svg text.lbl{font-family:"Noto Serif TC",Georgia,serif;font-style:italic;font-size:12.5px}
-svg text.sm{font-size:9.5px;fill:var(--ink-soft)}
+svg text{font-family:"IBM Plex Mono","Noto Sans TC",monospace;font-size:var(--t-xs);fill:var(--ink)}
+svg text.lbl{font-family:"Noto Serif TC",Georgia,serif;font-style:italic;font-size:var(--t-sm)}
+svg text.sm{font-size:var(--t-2xs);fill:var(--ink-soft)}
 svg text.acc{fill:var(--amber);font-weight:600}
 svg text.acc2{fill:var(--teal);font-weight:600}
 /* 描邊光暈：讓標籤壓在格線或粗線上時仍然看得清楚 */
@@ -424,49 +435,41 @@ svg .dotA{fill:var(--amber)}
 svg .dotT{fill:var(--teal)}
 
 /* ── stats ──────────────────────────────────────────────────────────── */
-.metric{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;
-  padding:9px 0;border-bottom:1px solid var(--rule-soft)}
-.metric:last-child{border-bottom:none}
-.metric .name{font-size:13.5px}
-.metric .val{font-family:"IBM Plex Mono",monospace;font-size:16px;font-weight:600;
-  font-variant-numeric:tabular-nums}
-.metric .sub{grid-column:1/-1;font-size:11.5px;color:var(--ink-faint);
-  font-family:"IBM Plex Mono",monospace}
-.bar{grid-column:1/-1;height:5px;background:var(--sheet-2);border:1px solid var(--rule-soft);
-  border-radius:3px;overflow:hidden;margin-top:3px}
-.bar i{display:block;height:100%;background:var(--teal);transition:width .22s ease}
-.bar i.low{background:var(--amber)}
-.bar i.zero{background:var(--ink-faint)}
 /* 一組指標排成一列，而不是四個各自成塊 */
 .statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;
-  background:var(--rule-soft);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
-.statgrid>div{background:var(--sheet);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
-.statgrid .n{font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:600;
+  background:var(--rule-soft);border:1px solid var(--rule);border-radius:var(--r1);overflow:hidden}
+.statgrid>div{background:var(--sheet);padding:10px 12px;display:flex;flex-direction:column;gap:var(--s1)}
+.statgrid .n{font-family:"IBM Plex Mono",monospace;font-size:var(--t-xl);font-weight:600;
   font-variant-numeric:tabular-nums;line-height:1.15}
 .statgrid .n.weak{color:var(--amber)}
 .statgrid .n.none{color:var(--ink-faint)}
-.statgrid .l{font-size:11.5px;color:var(--ink-soft);line-height:1.35}
+.statgrid .l{font-size:var(--t-xs);color:var(--ink-soft);line-height:1.35}
 
-/* 進度列：一條線就說完「練熟幾張」 */
-.progressbar{height:6px;border-radius:3px;background:var(--sheet-2);
+/* 進度條：全站只有這一個，大小用 .lg、顏色用 i.warn 調 */
+.bar{display:block;height:6px;border-radius:var(--rf);background:var(--sheet-2);
   border:1px solid var(--rule-soft);overflow:hidden}
-.progressbar i{display:block;height:100%;background:var(--teal);transition:width .25s ease}
+.bar>i{display:block;height:100%;border-radius:var(--rf);background:var(--teal);
+  transition:width .4s cubic-bezier(.2,.9,.3,1)}
+.bar>i.warn{background:var(--amber)}
+.bar.lg{height:10px;border-color:var(--rule);flex:1}
+.bar.lg>i{background:linear-gradient(90deg,var(--win),var(--teal))}
 
-.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
-  border-bottom:1px solid var(--rule-soft);font-size:13.5px}
+.kv{display:flex;justify-content:space-between;gap:var(--s3);padding:7px 0;
+  border-bottom:1px solid var(--rule-soft);font-size:var(--t-sm)}
 .kv:last-child{border-bottom:none}
+.kv.plain{border-bottom:none;padding:0}
 .kv b{font-family:"IBM Plex Mono",monospace;font-weight:600;font-variant-numeric:tabular-nums}
 
 /* ── list rows ──────────────────────────────────────────────────────── */
 .row{display:block;width:100%;text-align:left;background:var(--sheet);
-  border:1px solid var(--rule);border-radius:4px;padding:11px 12px;margin-bottom:8px;
+  border:1px solid var(--rule);border-radius:var(--r1);padding:11px 12px;margin-bottom:8px;
   transition:border-color .18s ease}
 .row:hover{border-color:var(--ink-faint)}
-.row .rtop{display:flex;align-items:baseline;gap:8px}
-.row .rtitle{font-family:"Noto Serif TC",serif;font-weight:700;font-size:14.5px;flex:1;
+.row .rtop{display:flex;align-items:baseline;gap:var(--s2)}
+.row .rtitle{font-family:"Noto Serif TC",serif;font-weight:700;font-size:var(--t-md);flex:1;
   text-wrap:balance;line-height:1.45}
-.row .rmeta{font-size:11.5px;color:var(--ink-faint);margin-top:3px;
-  display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.row .rmeta{font-size:var(--t-xs);color:var(--ink-faint);margin-top:3px;
+  display:flex;flex-wrap:wrap;gap:var(--s1) var(--s2);align-items:center}
 .dotmark{width:7px;height:7px;border-radius:50%;flex:none;display:inline-block}
 .dotmark.m0{background:var(--ink-faint)}
 .dotmark.m1{background:var(--amber)}
@@ -478,39 +481,34 @@ svg .dotT{fill:var(--teal)}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes rise{from{transform:translateY(14px);opacity:.6}to{transform:none;opacity:1}}
 .sheetbox{background:var(--sheet);width:100%;max-width:460px;max-height:88vh;overflow-y:auto;
-  overflow-x:hidden;border-radius:8px 8px 0 0;border-top:1px solid var(--rule);
+  overflow-x:hidden;border-radius:var(--r3) var(--r3) 0 0;border-top:1px solid var(--rule);
   animation:rise .22s ease;padding-bottom:env(safe-area-inset-bottom,0)}
 .sheethead{position:sticky;top:0;background:var(--sheet);border-bottom:1px solid var(--rule);
-  padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:2}
+  padding:12px 16px;display:flex;align-items:center;gap:var(--s3);z-index:2}
 .sheethead h3{flex:1}
 .sheetbody{padding:14px 16px 20px}
-.xbtn{flex:none;width:32px;height:32px;border:1px solid var(--rule);border-radius:4px;
-  color:var(--ink-soft);font-size:16px;line-height:1}
-.modal{background:var(--sheet);width:100%;max-width:360px;margin:auto;border-radius:6px;
+.xbtn{flex:none;width:32px;height:32px;border:1px solid var(--rule);border-radius:var(--r1);
+  color:var(--ink-soft);font-size:var(--t-lg);line-height:1}
+.modal{background:var(--sheet);width:100%;max-width:360px;margin:auto;border-radius:var(--r2);
   border:1px solid var(--rule);padding:18px}
 .scrim.center{align-items:center;padding:16px}
 
 /* ── misc ───────────────────────────────────────────────────────────── */
+/* 少數真的需要的工具類，其餘一律交給 .stack / .panel 的 gap */
+.push{margin-left:auto}
+.link{text-decoration:underline;font-size:var(--t-xs);color:var(--ink-soft)}
+.link:hover{color:var(--ink)}
+.grow{flex:1}
 .banner{border:1px solid var(--amber-line);background:var(--amber-bg);color:var(--amber);
-  border-radius:4px;padding:9px 12px;font-size:12.5px;display:flex;gap:8px;align-items:flex-start}
+  border-radius:var(--r1);padding:9px 12px;font-size:var(--t-sm);display:flex;gap:var(--s2);align-items:flex-start}
 .banner.teal{border-color:var(--teal-line);background:var(--teal-bg);color:var(--teal)}
 .banner.red{border-color:var(--red-line);background:var(--red-bg);color:var(--red)}
-.progressline{display:flex;gap:3px;margin-bottom:12px}
-.progressline i{flex:1;height:3px;background:var(--rule);border-radius:2px}
-.progressline i.done{background:var(--teal)}
-.progressline i.now{background:var(--ink)}
-.progressline i.miss{background:var(--red)}
-textarea.json{width:100%;min-height:120px;border:1px solid var(--rule);border-radius:4px;
-  background:var(--sheet-2);padding:9px;font-family:"IBM Plex Mono",monospace;font-size:11px;
-  line-height:1.5;resize:vertical}
-.big{font-family:"IBM Plex Mono",monospace;font-size:40px;font-weight:600;line-height:1;
+.big{font-family:"IBM Plex Mono",monospace;font-size:var(--t-hero);font-weight:600;line-height:1;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .muted{color:var(--ink-soft)}
-.small{font-size:12.5px}
-.tiny{font-size:11.5px}
+.small{font-size:var(--t-sm)}
+.tiny{font-size:var(--t-xs)}
 .center{text-align:center}
-.gap{display:flex;flex-direction:column;gap:10px}
-.gap-s{display:flex;flex-direction:column;gap:6px}
 .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
   clip:rect(0,0,0,0);white-space:nowrap;border:0}
 hr.rule{border:none;border-top:1px solid var(--rule);margin:14px 0}
