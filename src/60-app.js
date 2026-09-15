@@ -59,7 +59,16 @@ function HomeScreen(props){
       h('button', {className:'btn ghost', onClick:function(){ props.onStart('free'); }},
         '隨機抽考')),
 
-    /* ② 一條線說完整體進度 */
+    /* ② 本週：一天一格，練過就塗上螢光筆 */
+    h('div', {className:'panel'},
+      h('div', {className:'week'}, weekGrid(p).map(function(d){
+        return h('div', {key:d.day, className:'d'},
+          h('div', {className:cx('box', d.hit ? 'hit' : '', d.today ? 'today' : '')},
+            d.hit ? '✓' : ''),
+          h('span', {className:'lbl'}, d.label));
+      }))),
+
+    /* ③ 一條線說完整體進度 */
     h('div', {className:'panel'},
       h('div', {className:'kv plain'},
         h('span', {className:'small'}, '已練熟'),
@@ -71,7 +80,7 @@ function HomeScreen(props){
         (startedToday ? ('　·　累計答對 ' + totals.ok + ' / ' + totals.n +
           (totals.pct === null ? '' : '（' + totals.pct + '%）')) : ''))),
 
-    /* ③ 有錯題才長出來 */
+    /* ④ 有錯題才長出來 */
     weak.length
       ? h('div', {className:'panel'},
           h('h3', null, '最容易忘記'),
@@ -94,7 +103,7 @@ function HomeScreen(props){
           h('span', null, h('b', null, '進度未保存　'), props.storeNote))
       : null,
 
-    /* ④ 進度細節收在同一頁的底部，不再另開一個分頁 */
+    /* ⑤ 進度細節收在同一頁的底部，不再另開一個分頁 */
     h('details', {className:'more'},
       h('summary', null, '看詳細進度與錯題'),
       h(ProgressPanel, {progress:p, onOpenCard:props.onOpenCard,

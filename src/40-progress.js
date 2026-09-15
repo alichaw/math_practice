@@ -79,6 +79,38 @@ function touchStreak(progress){
   if(st.days > st.best) st.best = st.days;
   return st;
 }
+/* 本週七天各練了沒（週一到週日），給首頁的格子用 */
+function weekGrid(progress){
+  var today = todayStr(), out = [];
+  var d = new Date(today.split('-')[0], Number(today.split('-')[1]) - 1, today.split('-')[2]);
+  var back = (d.getDay() + 6) % 7;                 /* 週一當一週的開始 */
+  var monday = addDays(today, -back);
+  var names = ['一', '二', '三', '四', '五', '六', '日'];
+  for(var i = 0; i < 7; i++){
+    var day = addDays(monday, i);
+    out.push({day:day, label:names[i], today:day === today,
+      hit:dayAnswered(progress, day), future:daysBetween(today, day) > 0});
+  }
+  return out;
+}
+/* 某一天有沒有作答紀錄 */
+function dayAnswered(progress, day){
+  var hit = false;
+  ALL_CARDS.forEach(function(c){
+    var cp = progress.cards[c.id];
+    if(cp && cp.lastAt === day) hit = true;
+  });
+  Object.keys(progress.methods || {}).forEach(function(id){
+    var mp = progress.methods[id];
+    if(mp && mp.lastAt === day) hit = true;
+  });
+  if(!hit && progress.streak && progress.streak.lastDay){
+    /* 更早的日子只靠連續天數推回去 */
+    var back = daysBetween(day, progress.streak.lastDay);
+    if(back >= 0 && back < progress.streak.days) hit = true;
+  }
+  return hit;
+}
 /* 今天練了沒 */
 function practicedToday(progress){
   return !!(progress.streak && progress.streak.lastDay === todayStr());

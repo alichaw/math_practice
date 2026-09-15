@@ -1,18 +1,25 @@
 <title>會考數學公式教練</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Archivo+Black&display=swap">
 <style>
 /* ── tokens ─────────────────────────────────────────────────────────── */
 :root{
-  --paper:#F2EEE4; --sheet:#FCFAF5; --sheet-2:#EFEADC;
-  --ink:#16273D; --ink-soft:#5A6A7D; --ink-faint:#8A96A3;
-  --teal:#0C7361; --teal-bg:#E1EFEA; --teal-line:#9CC9BE;
-  --amber:#A9700B; --amber-bg:#F6EBD5; --amber-line:#DCC08A;
-  --red:#9E3535; --red-bg:#F6E4E1; --red-line:#DCACA4;
-  --rule:#D9D2C4; --rule-soft:#E7E1D4;
-  --focus:#0C7361;
-  --shadow:0 1px 0 rgba(22,39,61,.06);
+  /* 紙：冷白偏藍，像剛拆封的方格筆記本 */
+  --paper:#EEF3FA; --sheet:#FFFFFF; --sheet-2:#E7EEF8;
+  /* 字：原子筆的藍黑 */
+  --ink:#0E1B2E; --ink-soft:#49607E; --ink-faint:#8397B2;
+  /* 主色：亮青綠，按鈕與正確 */
+  --teal:#00B39A; --teal-bg:#D5F7F1; --teal-line:#00806E;
+  /* 螢光橘：提醒 */
+  --amber:#D97600; --amber-bg:#FFEDD2; --amber-line:#FFBE5C;
+  /* 螢光粉：錯誤 */
+  --red:#E11D63; --red-bg:#FFE0EC; --red-line:#FF8FB8;
+  --rule:#CEDBEB; --rule-soft:#E3EBF6;
+  --focus:#00B39A;
+  --shadow:0 1px 0 rgba(14,27,46,.06);
+  /* 螢光筆：劃重點用的半透明黃綠 */
+  --hl:rgba(214,255,61,.75); --hl-solid:#D6FF3D;
 
   /* 間距：4 的倍數，全站只用這六個值 */
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
@@ -32,40 +39,42 @@
   --t-hero:46px;   /* 首頁與結算的主數字 */
 
   /* 遊戲感的重點色：取自學生常用的螢光筆 */
-  --hot:#E8365D; --hot-bg:#FFE8ED;
-  --gold:#F5A524; --gold-bg:#FFF3DC;
-  --win:#12A87C; --win-bg:#DCF6EE;
-  --grape:#7A4DE8; --grape-bg:#EFE8FF;
+  --hot:#FF2D7A; --hot-bg:#FFE0EC;
+  --gold:#FF9500; --gold-bg:#FFEEDA;
+  --win:#00C765; --win-bg:#D6F9E5;
+  --grape:#7C5CFF; --grape-bg:#EAE4FF;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --paper:#141A20; --sheet:#1C242C; --sheet-2:#232D36;
-    --ink:#E9E4D8; --ink-soft:#9FADBA; --ink-faint:#77848F;
-    --teal:#4FC3AB; --teal-bg:#13322D; --teal-line:#2E6C5E;
-    --amber:#E3A44A; --amber-bg:#332612; --amber-line:#6E5628;
-    --red:#E88B80; --red-bg:#361D1B; --red-line:#6E3B36;
-    --rule:#2E3A45; --rule-soft:#26313A;
-    --focus:#4FC3AB;
-    --shadow:0 1px 0 rgba(0,0,0,.3);
-    --hot:#FF6B8A; --hot-bg:#3A1620;
-    --gold:#FFC65C; --gold-bg:#3A2C12;
-    --win:#3FD6A8; --win-bg:#0F332A;
-    --grape:#A98BFF; --grape-bg:#241A3D;
+    --paper:#0A1220; --sheet:#111C2E; --sheet-2:#17253B;
+    --ink:#EAF1FB; --ink-soft:#9DB2CE; --ink-faint:#6F87A6;
+    --teal:#2BE0C4; --teal-bg:#07332D; --teal-line:#12796A;
+    --amber:#FFB020; --amber-bg:#3A2708; --amber-line:#8A5E12;
+    --red:#FF5C97; --red-bg:#3B0E24; --red-line:#8C2450;
+    --rule:#2A3B53; --rule-soft:#1E2E45;
+    --focus:#2BE0C4;
+    --shadow:0 1px 0 rgba(0,0,0,.35);
+    --hl:rgba(214,255,61,.28); --hl-solid:#D6FF3D;
+    --hot:#FF5C97; --hot-bg:#3B0E24;
+    --gold:#FFB020; --gold-bg:#3A2708;
+    --win:#2BE08A; --win-bg:#06331F;
+    --grape:#A78BFF; --grape-bg:#241A45;
   }
 }
 :root[data-theme="dark"]{
-  --paper:#141A20; --sheet:#1C242C; --sheet-2:#232D36;
-  --ink:#E9E4D8; --ink-soft:#9FADBA; --ink-faint:#77848F;
-  --teal:#4FC3AB; --teal-bg:#13322D; --teal-line:#2E6C5E;
-  --amber:#E3A44A; --amber-bg:#332612; --amber-line:#6E5628;
-  --red:#E88B80; --red-bg:#361D1B; --red-line:#6E3B36;
-  --rule:#2E3A45; --rule-soft:#26313A;
-  --focus:#4FC3AB;
-  --shadow:0 1px 0 rgba(0,0,0,.3);
-  --hot:#FF6B8A; --hot-bg:#3A1620;
-  --gold:#FFC65C; --gold-bg:#3A2C12;
-  --win:#3FD6A8; --win-bg:#0F332A;
-  --grape:#A98BFF; --grape-bg:#241A3D;
+  --paper:#0A1220; --sheet:#111C2E; --sheet-2:#17253B;
+  --ink:#EAF1FB; --ink-soft:#9DB2CE; --ink-faint:#6F87A6;
+  --teal:#2BE0C4; --teal-bg:#07332D; --teal-line:#12796A;
+  --amber:#FFB020; --amber-bg:#3A2708; --amber-line:#8A5E12;
+  --red:#FF5C97; --red-bg:#3B0E24; --red-line:#8C2450;
+  --rule:#2A3B53; --rule-soft:#1E2E45;
+  --focus:#2BE0C4;
+  --shadow:0 1px 0 rgba(0,0,0,.35);
+  --hl:rgba(214,255,61,.28); --hl-solid:#D6FF3D;
+  --hot:#FF5C97; --hot-bg:#3B0E24;
+  --gold:#FFB020; --gold-bg:#3A2708;
+  --win:#2BE08A; --win-bg:#06331F;
+  --grape:#A78BFF; --grape-bg:#241A45;
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -84,12 +93,17 @@ button{cursor:pointer;background:none;border:none;padding:0}
 /* ── shell ──────────────────────────────────────────────────────────── */
 .app{max-width:460px;margin:0 auto;min-height:100vh;background:var(--sheet);
   border-left:1px solid var(--rule);border-right:1px solid var(--rule);
-  display:flex;flex-direction:column;overflow-x:hidden}
+  display:flex;flex-direction:column;overflow-x:hidden;
+  /* 方格筆記本的底紋，淡到不干擾閱讀 */
+  background-image:linear-gradient(var(--rule-soft) 1px,transparent 1px),
+    linear-gradient(90deg,var(--rule-soft) 1px,transparent 1px);
+  background-size:22px 22px;background-position:-1px -1px}
 @media (max-width:479px){.app{border-left:none;border-right:none}}
 .topbar{position:sticky;top:0;z-index:30;background:var(--sheet);
   border-bottom:1px solid var(--rule);padding:10px 16px 8px;
   display:flex;align-items:baseline;gap:var(--s2)}
-.topbar h1{margin:0;font-family:"Noto Serif TC",serif;font-weight:700;font-size:var(--t-lg);letter-spacing:.02em}
+.topbar h1{margin:0;font-family:"Noto Sans TC",sans-serif;font-weight:900;
+  font-size:var(--t-lg);letter-spacing:.01em}
 .topbar .sub{margin-left:auto;font-size:var(--t-lg);line-height:1;width:40px;height:40px;
   border-radius:var(--rf);display:flex;align-items:center;justify-content:center;
   transition:background-color .15s ease}
@@ -103,7 +117,11 @@ button{cursor:pointer;background:none;border:none;padding:0}
 .nav button{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:var(--s1);color:var(--ink-soft);font-size:var(--t-xs);letter-spacing:.02em;
   border-top:2px solid transparent;margin-top:-1px;transition:color .18s ease,border-color .18s ease}
-.nav button[aria-current="page"]{color:var(--teal);border-top-color:var(--teal);font-weight:700}
+.nav button[aria-current="page"]{color:var(--ink);border-top-color:transparent;font-weight:700}
+.nav button[aria-current="page"] span:last-child{position:relative;isolation:isolate}
+.nav button[aria-current="page"] span:last-child::before{content:"";position:absolute;z-index:-1;
+  left:-.3em;right:-.3em;bottom:-.04em;height:.7em;
+  background:var(--hl);border-radius:.32em .5em .28em .46em;transform:rotate(-1deg)}
 .nav svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
 
@@ -118,8 +136,8 @@ button{cursor:pointer;background:none;border:none;padding:0}
   justify-content:center;pointer-events:none;padding:0 var(--s4)}
 .toastwrap>*{max-width:400px}
 .secthead .right{font-family:"IBM Plex Mono",monospace;font-size:var(--t-xs);color:var(--ink-faint)}
-.secthead h2{margin:0;font-family:"Noto Serif TC",serif;font-size:var(--t-md);font-weight:700;letter-spacing:.02em}
-h3{font-family:"Noto Serif TC",serif;font-size:var(--t-md);font-weight:700;margin:0;text-wrap:balance}
+.secthead h2{margin:0;font-family:"Noto Sans TC",sans-serif;font-size:var(--t-md);font-weight:900}
+h3{font-family:"Noto Sans TC",sans-serif;font-size:var(--t-md);font-weight:900;margin:0;text-wrap:balance}
 p{margin:0 0 10px}
 p:last-child{margin-bottom:0}
 
@@ -132,14 +150,24 @@ p:last-child{margin-bottom:0}
 .stack.tight{--gap:var(--s2)}
 .stack.loose{--gap:var(--s4)}
 .panel{display:flex;flex-direction:column;gap:var(--gap,var(--s3))}
-.panel+.panel{margin-top:var(--s5);padding-top:var(--s5);border-top:1px solid var(--rule-soft)}
+.panel:not(:first-child){margin-top:var(--s5);padding-top:var(--s5);
+  border-top:1px solid var(--rule-soft)}
+/* ══ 螢光筆 ══════════════════════════════════════════════════════
+   只用在三個「劃重點」的時刻：要背的公式、選對的答案、你在哪一頁。
+   兩端不對稱的圓角 + 微微歪斜，做出手畫的痕跡。 */
+.swipe{position:relative;isolation:isolate}
+.swipe::before{content:"";position:absolute;z-index:-1;
+  left:-.2em;right:-.2em;bottom:.04em;height:.66em;
+  background:var(--hl);border-radius:.32em .5em .28em .46em;
+  transform:rotate(-.7deg)}
+
 /* ══ 遊戲感：連續天數、XP、連對、彩帶、答題回饋 ══════════════════ */
 .confetti{position:fixed;inset:0;z-index:90;pointer-events:none}
 
 /* 練習時最上面那條：連續天數 · 今日目標 · 本輪 XP */
 .hud{display:flex;align-items:center;gap:var(--s3);margin-bottom:12px}
-.hud .pill{display:inline-flex;align-items:center;gap:var(--s1);padding:5px 11px;border-radius:var(--rf);
-  font-family:"IBM Plex Mono",monospace;font-size:var(--t-sm);font-weight:600;
+.hud .pill{display:inline-flex;align-items:center;gap:var(--s1);padding:6px 12px;border-radius:var(--rf);
+  font-family:"Archivo Black","IBM Plex Mono",monospace;font-size:var(--t-sm);
   font-variant-numeric:tabular-nums;border:1px solid transparent;white-space:nowrap}
 .hud .pill.fire{background:var(--gold-bg);color:var(--gold);border-color:var(--gold)}
 .hud .pill.xp{background:var(--grape-bg);color:var(--grape);border-color:var(--grape)}
@@ -154,10 +182,10 @@ p:last-child{margin-bottom:0}
   animation:flashin .5s ease-out}
 .flash.bad{background:radial-gradient(circle at 50% 42%,var(--hot-bg),transparent 62%);
   animation:flashin .5s ease-out}
-@keyframes flashin{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+@keyframes flashin{0%{opacity:0}18%{opacity:.8}100%{opacity:0}}
 
 /* 飛出來的 +XP */
-.xpfly{position:fixed;left:50%;top:96px;z-index:85;pointer-events:none;
+.xpfly{position:fixed;left:50%;top:148px;z-index:85;pointer-events:none;
   transform:translateX(-50%);font-family:"IBM Plex Mono",monospace;
   font-size:var(--t-num);font-weight:700;color:#FFFDF8;background:var(--win);
   padding:4px 16px;border-radius:var(--rf);white-space:nowrap;
@@ -177,12 +205,12 @@ p:last-child{margin-bottom:0}
 .result{display:flex;flex-direction:column;align-items:center;gap:var(--s2);
   padding:26px 0 18px;text-align:center}
 .result .crown{font-size:var(--t-hero);line-height:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
-.result h2{margin:0;font-family:"Noto Serif TC",serif;font-size:var(--t-xl);font-weight:700}
+.result h2{margin:0;font-family:"Noto Sans TC",sans-serif;font-size:var(--t-xl);font-weight:900}
 .result .sub{font-size:var(--t-sm);color:var(--ink-soft)}
 .scoreboard{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);width:100%;margin-top:14px}
 .scoreboard>div{background:var(--sheet-2);border:1px solid var(--rule);border-radius:var(--r2);
   padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:var(--s1)}
-.scoreboard .n{font-family:"IBM Plex Mono",monospace;font-size:var(--t-xl);font-weight:700;
+.scoreboard .n{font-family:"Archivo Black","IBM Plex Mono",monospace;font-size:var(--t-xl);
   font-variant-numeric:tabular-nums;line-height:1}
 .scoreboard .n.gold{color:var(--gold)} .scoreboard .n.win{color:var(--win)}
 .scoreboard .n.grape{color:var(--grape)}
@@ -197,11 +225,24 @@ p:last-child{margin-bottom:0}
 .goalring .ring-fg.done{stroke:var(--gold)}
 
 /* 連續天數大字 */
-.streakbig{display:flex;align-items:center;gap:var(--s2);font-family:"IBM Plex Mono",monospace;
-  font-size:var(--t-num);font-weight:700;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
+.streakbig{display:flex;align-items:center;gap:var(--s2);
+  font-family:"Archivo Black","IBM Plex Mono",monospace;
+  font-size:var(--t-num);color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
 .streakbig .flame{font-size:var(--t-num)}
-.streakbig .unit{font-size:var(--t-sm);font-weight:400;color:var(--ink-soft)}
-.streakbig.cold{color:var(--ink-faint)}
+.streakbig .unit{font-size:var(--t-sm);font-weight:400;color:var(--ink-soft);
+  font-family:"Noto Sans TC",sans-serif}
+/* 本週：一天一格，練過就塗上螢光筆 */
+.week{display:flex;gap:var(--s1);align-items:flex-end}
+.week .d{flex:1;display:flex;flex-direction:column;align-items:center;gap:var(--s1)}
+.week .box{width:100%;aspect-ratio:1;max-width:34px;border-radius:var(--r1);
+  border:1px solid var(--rule);background:var(--sheet);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Archivo Black","IBM Plex Mono",monospace;font-size:var(--t-sm);
+  color:var(--ink-faint)}
+.week .box.hit{background:var(--hl);border-color:var(--hl-solid);color:var(--ink)}
+.week .box.today{border-width:2px;border-color:var(--teal)}
+.week .lbl{font-size:var(--t-2xs);color:var(--ink-faint)}
+.streakbig.cold{color:var(--ink-soft)}
 
 /* 主按鈕做大一點、按下去會凹 */
 .btn.primary{border-radius:var(--r3);font-size:var(--t-lg);min-height:52px;
@@ -322,12 +363,16 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
   text-align:center;color:var(--ink-soft);margin-top:2px}
 .opt[aria-pressed="true"]{border-color:var(--ink);background:var(--sheet-2)}
 .opt[aria-pressed="true"] .key{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
-.opt.ok{border-color:var(--teal);background:var(--teal-bg)}
-.opt.ok .key{background:var(--teal);border-color:var(--teal);color:#FBFEFD}
+.opt.ok{border-color:var(--win);background:var(--win-bg)}
+.opt.ok .grow{position:relative;isolation:isolate}
+.opt.ok .grow::before{content:"";position:absolute;z-index:-1;
+  left:-.2em;right:-.2em;bottom:.04em;height:.66em;
+  background:var(--hl);border-radius:.32em .5em .28em .46em;transform:rotate(-.7deg)}
+.opt.ok .key{background:var(--win);border-color:var(--win);color:#042A16}
 .opt.bad{border-color:var(--red);background:var(--red-bg)}
 .opt.bad .key{background:var(--red);border-color:var(--red);color:#FFF6F5}
 .opt .mark{margin-left:auto;font-size:var(--t-sm);font-weight:700;white-space:nowrap;padding-left:8px}
-.opt.ok .mark{color:var(--teal)}
+.opt.ok .mark{color:var(--win)}
 .opt.bad .mark{color:var(--red)}
 
 /* ── math ───────────────────────────────────────────────────────────── */
@@ -365,8 +410,9 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .m.flow>span{white-space:normal}
 .m.flow .frac,.m.flow .sqrt,.m.flow .ovl,.m.flow .sc{white-space:nowrap}
 .mwrap{overflow-x:auto;max-width:100%}
-.formula-card{background:var(--sheet-2);border:1px solid var(--rule);border-radius:var(--r1);
-  padding:6px 10px;margin:2px 0}
+.formula-card{background:var(--hl);border:1px solid transparent;border-radius:var(--r1);
+  padding:var(--s2) var(--s3);margin:2px 0;
+  box-shadow:0 1px 0 rgba(14,27,46,.06)}
 .formula-card.hidden{background:repeating-linear-gradient(135deg,var(--sheet-2),var(--sheet-2) 6px,var(--sheet) 6px,var(--sheet) 12px);
   color:var(--ink-faint);text-align:center;padding:14px 10px;font-size:var(--t-sm)}
 
@@ -382,7 +428,7 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
 .m.blk .blank{margin:2px 3px}
 .blank.active{border-style:solid;border-color:var(--teal);background:var(--teal-bg);border-width:2px}
 .blank.filled{border-style:solid;border-color:var(--rule)}
-.blank.ok{border-color:var(--teal);background:var(--teal-bg)}
+.blank.ok{border-color:var(--win);background:var(--hl)}
 .blank.bad{border-color:var(--red);background:var(--red-bg)}
 .bank{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:12px}
 .token{min-height:40px;padding:5px 13px;border:1px solid var(--rule);border-radius:var(--r1);
@@ -439,7 +485,7 @@ svg .dotT{fill:var(--teal)}
 .statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;
   background:var(--rule-soft);border:1px solid var(--rule);border-radius:var(--r1);overflow:hidden}
 .statgrid>div{background:var(--sheet);padding:10px 12px;display:flex;flex-direction:column;gap:var(--s1)}
-.statgrid .n{font-family:"IBM Plex Mono",monospace;font-size:var(--t-xl);font-weight:600;
+.statgrid .n{font-family:"Archivo Black","IBM Plex Mono",monospace;font-size:var(--t-xl);
   font-variant-numeric:tabular-nums;line-height:1.15}
 .statgrid .n.weak{color:var(--amber)}
 .statgrid .n.none{color:var(--ink-faint)}
@@ -466,7 +512,7 @@ svg .dotT{fill:var(--teal)}
   transition:border-color .18s ease}
 .row:hover{border-color:var(--ink-faint)}
 .row .rtop{display:flex;align-items:baseline;gap:var(--s2)}
-.row .rtitle{font-family:"Noto Serif TC",serif;font-weight:700;font-size:var(--t-md);flex:1;
+.row .rtitle{font-family:"Noto Sans TC",sans-serif;font-weight:900;font-size:var(--t-md);flex:1;
   text-wrap:balance;line-height:1.45}
 .row .rmeta{font-size:var(--t-xs);color:var(--ink-faint);margin-top:3px;
   display:flex;flex-wrap:wrap;gap:var(--s1) var(--s2);align-items:center}
@@ -503,7 +549,7 @@ svg .dotT{fill:var(--teal)}
   border-radius:var(--r1);padding:9px 12px;font-size:var(--t-sm);display:flex;gap:var(--s2);align-items:flex-start}
 .banner.teal{border-color:var(--teal-line);background:var(--teal-bg);color:var(--teal)}
 .banner.red{border-color:var(--red-line);background:var(--red-bg);color:var(--red)}
-.big{font-family:"IBM Plex Mono",monospace;font-size:var(--t-hero);font-weight:600;line-height:1;
+.big{font-family:"Archivo Black","IBM Plex Mono",monospace;font-size:var(--t-hero);font-weight:400;line-height:1;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .muted{color:var(--ink-soft)}
 .small{font-size:var(--t-sm)}
