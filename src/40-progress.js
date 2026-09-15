@@ -6,9 +6,18 @@ var ALL_CARDS = ATTACHED.concat(NUM_CARDS, FUNC_CARDS, GEOF_CARDS, GEOP_CARDS);
 var CARD_BY_ID = {};
 ALL_CARDS.forEach(function(c){ CARD_BY_ID[c.id] = c; });
 
+var METHOD_BY_ID = {};
+METHODS.forEach(function(m){ METHOD_BY_ID[m.id] = m; });
+/* 知識卡 + 解法卡：兩者都納入間隔複習 */
+var ALL_NODES = ALL_CARDS.concat(METHODS);
+var NODE_BY_ID = {};
+ALL_NODES.forEach(function(n){ NODE_BY_ID[n.id] = n; });
+
 var CATEGORIES = {num:'數與代數', eq:'方程式與函數', geo:'幾何', stat:'統計與機率'};
 var GRADES = {7:'七年級', 8:'八年級', 9:'九年級'};
-var KINDS = {recall:'公式回想', recognition:'題型辨識', application:'公式套用'};
+var KINDS = {recall:'公式回想', select:'看題選公式', recognition:'題型辨識',
+             application:'公式套用', method:'解法練習'};
+var KIND_ORDER = ['recall', 'select', 'recognition', 'application'];
 var ERROR_REASONS = [
   {id:'forgot', label:'公式忘記'}, {id:'wrongFormula', label:'選錯公式'},
   {id:'misread', label:'條件看錯'}, {id:'matching', label:'對應邊角找錯'},
@@ -20,9 +29,7 @@ ERROR_REASONS.forEach(function(r){ REASON_LABEL[r.id] = r.label; });
 
 var LADDER_UNSURE = [1, 3, 7];
 var LADDER_KNOWN = [3, 7, 14, 30];
-var STORAGE_KEY = 'mathCoach.progress.v1';
-var DB_PATH = 'progress/main';
-var PROGRESS_VERSION = 1;
+var PROGRESS_VERSION = 2;
 
 function todayStr(d){
   var t = d || new Date();
@@ -44,44 +51,79 @@ function daysBetween(a, b){
 
 function emptyCard(){
   return {seen:0, due:null, successDays:[],
-    recall:{c:0, t:0}, recognition:{c:0, t:0}, application:{c:0, t:0},
+    recall:{c:0, t:0}, select:{c:0, t:0}, recognition:{c:0, t:0}, application:{c:0, t:0},
+    unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null};
+}
+/* 解法卡只有一種題型，所以只留 method 這一個計數桶 */
+function emptyMethod(){
+  return {seen:0, due:null, successDays:[], method:{c:0, t:0},
     unsureIdx:0, knownIdx:0, lapses:0, reasons:{}, lastResult:null, lastAt:null};
 }
 function emptyProgress(){
-  return {version:PROGRESS_VERSION, cards:{}, recentWrong:[],
+  return {version:PROGRESS_VERSION, cards:{}, methods:{}, recentWrong:[],
     createdAt:todayStr(), updatedAt:todayStr()};
+}
+function getMP(progress, id){
+  if(!progress.methods) progress.methods = {};
+  if(!progress.methods[id]) progress.methods[id] = emptyMethod();
+  var mp = progress.methods[id];
+  if(!mp.method) mp.method = {c:0, t:0};
+  if(!mp.successDays) mp.successDays = [];
+  if(!mp.reasons) mp.reasons = {};
+  return mp;
+}
+/* 不管是知識卡還是解法卡，都用這個取進度 */
+function getNP(progress, id){
+  return METHOD_BY_ID[id] ? getMP(progress, id) : getCP(progress, id);
+}
+function npOf(progress, id){
+  return METHOD_BY_ID[id] ? (progress.methods || {})[id] : progress.cards[id];
 }
 function getCP(progress, id){
   if(!progress.cards[id]) progress.cards[id] = emptyCard();
   var cp = progress.cards[id];
-  ['recall', 'recognition', 'application'].forEach(function(k){
+  KIND_ORDER.forEach(function(k){
     if(!cp[k]) cp[k] = {c:0, t:0};
   });
   if(!cp.successDays) cp.successDays = [];
   if(!cp.reasons) cp.reasons = {};
   return cp;
 }
-/* 熟練條件：不同日期成功回想 ≥ 2、辨識答對 ≥ 1、應用答對 ≥ 2 */
-function isMastered(cp){
+/* 熟練條件：不同日期成功回想 ≥ 2、看題選公式答對 ≥ 2、辨識答對 ≥ 1、應用答對 ≥ 2
+   「看題選公式」是「背起來但不會用」的那一關，所以和應用題同樣要求 2 次 */
+function isMastered(cp, card){
   if(!cp) return false;
+  var needSelect = !card || poolFor(card, 'select').length > 0;
   return (cp.successDays || []).length >= 2 &&
+         (!needSelect || (cp.select ? cp.select.c : 0) >= 2) &&
          (cp.recognition ? cp.recognition.c : 0) >= 1 &&
          (cp.application ? cp.application.c : 0) >= 2;
 }
-function masteryLevel(cp){
+/* 解法卡：不同日期答對 2 次才算熟練 */
+function isMethodMastered(mp){
+  if(!mp) return false;
+  return (mp.successDays || []).length >= 2 && mp.method.c >= 2;
+}
+function isNodeMastered(progress, node){
+  return METHOD_BY_ID[node.id]
+    ? isMethodMastered((progress.methods || {})[node.id])
+    : isMastered(progress.cards[node.id], node);
+}
+function masteryLevel(cp, card){
   if(!cp || cp.seen === 0) return 0;
-  return isMastered(cp) ? 2 : 1;
+  return isMastered(cp, card) ? 2 : 1;
 }
 var MASTERY_LABEL = ['尚未練習', '練習中', '已熟練'];
 
 /* 記錄一次作答 */
 function recordAnswer(progress, id, kind, correct, reason){
-  var cp = getCP(progress, id), today = todayStr();
+  var cp = getNP(progress, id), today = todayStr();
   cp.seen++;
   cp[kind].t++;
   if(correct){
     cp[kind].c++;
-    if(kind === 'recall' && cp.successDays.indexOf(today) < 0) cp.successDays.push(today);
+    if((kind === 'recall' || kind === 'method') && cp.successDays.indexOf(today) < 0)
+      cp.successDays.push(today);
   } else {
     cp.lapses++;
     if(reason) cp.reasons[reason] = (cp.reasons[reason] || 0) + 1;
@@ -95,7 +137,7 @@ function recordAnswer(progress, id, kind, correct, reason){
 }
 /* 依自評與對錯決定下次複習日 */
 function scheduleCard(progress, id, confidence, correct){
-  var cp = getCP(progress, id), today = todayStr(), gap;
+  var cp = getNP(progress, id), today = todayStr(), gap;
   if(!correct){
     gap = 1;                       /* 答錯：隔天一定再複習 */
     cp.unsureIdx = 0; cp.knownIdx = 0;
@@ -115,25 +157,28 @@ function scheduleCard(progress, id, confidence, correct){
   return gap;
 }
 /* 下一題該考哪一種形式 */
-function pickKind(cp){
+function pickKind(cp, card){
+  /* card 有給的話，題庫是空的那一種就跳過，資料補到一半也不會壞掉 */
+  function has(k){ return !card || poolFor(card, k).length > 0; }
   if(!cp || cp.recall.t === 0) return 'recall';
+  if(has('select') && cp.select.t === 0) return 'select';
   if(cp.recognition.t === 0) return 'recognition';
   if(cp.application.c < 2) return 'application';
-  var arr = [['recall', cp.recall.t], ['recognition', cp.recognition.t],
-             ['application', cp.application.t]];
+  if(has('select') && cp.select.c < 2) return 'select';
+  var arr = KIND_ORDER.filter(has).map(function(k){ return [k, cp[k].t]; });
   arr.sort(function(a, b){ return a[1] - b[1]; });
   return arr[0][0];
 }
 function dueList(progress, today){
   var t = today || todayStr();
-  return ALL_CARDS.filter(function(c){
-    var cp = progress.cards[c.id];
+  return ALL_NODES.filter(function(c){
+    var cp = npOf(progress, c.id);
     return cp && cp.due && daysBetween(cp.due, t) >= 0;
   });
 }
 function newList(progress){
-  return ALL_CARDS.filter(function(c){
-    var cp = progress.cards[c.id];
+  return ALL_NODES.filter(function(c){
+    var cp = npOf(progress, c.id);
     return !cp || cp.seen === 0;
   });
 }
@@ -151,12 +196,12 @@ function buildQueue(progress, opts){
   opts = opts || {};
   var limit = opts.limit || 12, today = todayStr(), pool;
   if(opts.mode === 'free'){
-    pool = (opts.cards && opts.cards.length ? opts.cards : ALL_CARDS);
+    pool = (opts.cards && opts.cards.length ? opts.cards : ALL_NODES);
     pool = shuffle(pool, Date.now() % 233280).slice(0, limit);
   } else {
     var due = dueList(progress, today).sort(function(a, b){
-      return daysBetween(progress.cards[b.id].due, today) -
-             daysBetween(progress.cards[a.id].due, today);
+      return daysBetween(npOf(progress, b.id).due, today) -
+             daysBetween(npOf(progress, a.id).due, today);
     });
     pool = due.slice(0, limit);
     if(pool.length < limit){
@@ -165,7 +210,11 @@ function buildQueue(progress, opts){
     }
   }
   return pool.map(function(c){
-    var k = pickKind(progress.cards[c.id]);
+    if(METHOD_BY_ID[c.id]){
+      var mp = (progress.methods || {})[c.id];
+      return {cardId:c.id, kind:'method', qi:qIndex(mp, 'method'), retry:false};
+    }
+    var k = pickKind(progress.cards[c.id], c);
     return {cardId:c.id, kind:k, qi:qIndex(progress.cards[c.id], k), retry:false};
   });
 }
@@ -176,12 +225,15 @@ function qIndex(cp, kind){
 }
 /* 這一題要從卡片的題庫裡拿第幾題 */
 function poolFor(card, kind){
-  return kind === 'recall' ? [card.recallPrompt]
+  return kind === 'method' ? card.practiceQuestions
+       : kind === 'recall' ? [card.recallPrompt]
+       : kind === 'select' ? card.selectQuestions
        : kind === 'recognition' ? card.recognitionQuestions
        : card.applicationQuestions;
 }
 function qFor(card, kind, qi){
   var pool = poolFor(card, kind);
+  if(!pool || !pool.length) pool = card.recognitionQuestions || card.practiceQuestions;
   return pool[(qi || 0) % pool.length];
 }
 /* 最容易忘記的知識點 */
@@ -189,8 +241,8 @@ function weakest(progress, n){
   var scored = ALL_CARDS.map(function(c){
     var cp = progress.cards[c.id];
     if(!cp || cp.seen === 0) return null;
-    var tot = cp.recall.t + cp.recognition.t + cp.application.t;
-    var ok = cp.recall.c + cp.recognition.c + cp.application.c;
+    var tot = 0, ok = 0;
+    KIND_ORDER.forEach(function(k){ if(cp[k]){ tot += cp[k].t; ok += cp[k].c; } });
     var acc = tot ? ok / tot : 1;
     var score = cp.lapses * 2 + (1 - acc) * 5 + (cp.lastResult === 'miss' ? 2 : 0);
     return score > 0 ? {card:c, score:score, acc:acc, lapses:cp.lapses} : null;
@@ -209,7 +261,7 @@ function kindStats(progress, kind){
 function categoryStats(progress){
   return Object.keys(CATEGORIES).map(function(k){
     var list = ALL_CARDS.filter(function(c){ return c.category === k; });
-    var mastered = list.filter(function(c){ return isMastered(progress.cards[c.id]); }).length;
+    var mastered = list.filter(function(c){ return isMastered(progress.cards[c.id], c); }).length;
     var started = list.filter(function(c){
       var cp = progress.cards[c.id]; return cp && cp.seen > 0;
     }).length;
@@ -233,18 +285,16 @@ function reasonStats(progress){
 /* ── 練習狀態的查詢輔助 ─────────────────────────────────────────── */
 /* 還沒練熟的卡（含完全沒練過的），用來排出下一輪練習 */
 function pendingList(progress){
-  return ALL_CARDS.filter(function(c){
-    return !isMastered(progress.cards[c.id]);
-  });
+  return ALL_NODES.filter(function(c){ return !isNodeMastered(progress, c); });
 }
 /* 本次已安排複習間隔的卡，依間隔長短排序（純粹展示間隔複習的安排） */
 function scheduleList(progress){
   var today = todayStr();
-  return ALL_CARDS.filter(function(c){
-    var cp = progress.cards[c.id];
+  return ALL_NODES.filter(function(c){
+    var cp = npOf(progress, c.id);
     return cp && cp.due;
   }).map(function(c){
-    return {card:c, gap:daysBetween(today, progress.cards[c.id].due)};
+    return {card:c, gap:daysBetween(today, npOf(progress, c.id).due)};
   }).sort(function(a, b){ return a.gap - b.gap; });
 }
 /* 本次練習的總計（每答一題就即時更新） */
@@ -253,15 +303,17 @@ function sessionTotals(progress){
   ALL_CARDS.forEach(function(c){
     var cp = progress.cards[c.id];
     if(!cp) return;
-    ['recall', 'recognition', 'application'].forEach(function(k){
-      n += cp[k].t; ok += cp[k].c;
-    });
+    KIND_ORDER.forEach(function(k){ if(cp[k]){ n += cp[k].t; ok += cp[k].c; } });
+  });
+  Object.keys(progress.methods || {}).forEach(function(id){
+    var mp = progress.methods[id];
+    if(mp && mp.method){ n += mp.method.t; ok += mp.method.c; }
   });
   return {n:n, ok:ok, pct:n ? Math.round(ok / n * 100) : null};
 }
 
 function recordReason(progress, id, reason){
-  var cp = getCP(progress, id);
+  var cp = getNP(progress, id);
   if(!reason) return;
   cp.reasons[reason] = (cp.reasons[reason] || 0) + 1;
   if(progress.recentWrong.length && progress.recentWrong[0].id === id){
@@ -296,7 +348,7 @@ function normalizeProgress(raw){
           return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
         }).slice(0, 60)
       : [];
-    ['recall', 'recognition', 'application'].forEach(function(k){
+    KIND_ORDER.forEach(function(k){
       var s = c[k] || {};
       o[k] = {c:Math.max(0, Number(s.c) || 0), t:Math.max(0, Number(s.t) || 0)};
       if(o[k].c > o[k].t) o[k].c = o[k].t;
@@ -313,9 +365,35 @@ function normalizeProgress(raw){
     }
     out.cards[id] = o;
   });
+  var meths = (raw.methods && typeof raw.methods === 'object') ? raw.methods : {};
+  Object.keys(meths).forEach(function(id){
+    if(!METHOD_BY_ID[id]) return;
+    var c = meths[id] || {}, o = emptyMethod();
+    o.seen = Math.max(0, Number(c.seen) || 0);
+    o.due = (typeof c.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.due)) ? c.due : null;
+    o.successDays = Array.isArray(c.successDays)
+      ? c.successDays.filter(function(d){
+          return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+        }).slice(0, 60)
+      : [];
+    var mm = c.method || {};
+    o.method = {c:Math.max(0, Number(mm.c) || 0), t:Math.max(0, Number(mm.t) || 0)};
+    if(o.method.c > o.method.t) o.method.c = o.method.t;
+    o.unsureIdx = Math.min(Math.max(0, Number(c.unsureIdx) || 0), LADDER_UNSURE.length - 1);
+    o.knownIdx = Math.min(Math.max(0, Number(c.knownIdx) || 0), LADDER_KNOWN.length - 1);
+    o.lapses = Math.max(0, Number(c.lapses) || 0);
+    o.lastResult = (c.lastResult === 'ok' || c.lastResult === 'miss') ? c.lastResult : null;
+    o.lastAt = typeof c.lastAt === 'string' ? c.lastAt : null;
+    if(c.reasons && typeof c.reasons === 'object'){
+      Object.keys(c.reasons).forEach(function(r){
+        if(REASON_LABEL[r]) o.reasons[r] = Math.max(0, Number(c.reasons[r]) || 0);
+      });
+    }
+    out.methods[id] = o;
+  });
   if(Array.isArray(raw.recentWrong)){
     out.recentWrong = raw.recentWrong.filter(function(w){
-      return w && CARD_BY_ID[w.id] && KINDS[w.kind];
+      return w && NODE_BY_ID[w.id] && KINDS[w.kind];
     }).slice(0, 30).map(function(w){
       return {id:w.id, kind:w.kind,
         reason:REASON_LABEL[w.reason] ? w.reason : null,

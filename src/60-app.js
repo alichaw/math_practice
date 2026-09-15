@@ -25,7 +25,7 @@ function HomeScreen(props){
   var fresh = newList(p);
   var weak = weakest(p, 3);
   var totals = sessionTotals(p);
-  var mastered = ALL_CARDS.length - pending.length;
+  var mastered = ALL_NODES.length - pending.length;
   var planned = Math.min(12, due.length || Math.min(8, pending.length));
   var mins = Math.max(1, Math.round(planned * 25 / 60));
 
@@ -37,7 +37,7 @@ function HomeScreen(props){
             h('div', {style:{display:'flex', alignItems:'flex-end', gap:'10px'}},
               h('div', null,
                 h('div', {className:'big'}, due.length),
-                h('div', {className:'tiny muted'}, '張卡今天到期')),
+                h('div', {className:'tiny muted'}, '張卡今天到期（含解法卡）')),
               h('div', {style:{marginLeft:'auto', textAlign:'right'}},
                 h('div', {className:'big', style:{fontSize:'22px'}}, '約 ' + mins + ' 分'),
                 h('div', {className:'tiny muted'}, '這輪 ' + planned + ' 題'))),
@@ -48,8 +48,8 @@ function HomeScreen(props){
             h('div', {className:'banner teal', style:{marginBottom:'12px'}},
               h('span', {'aria-hidden':'true'}, '✓'),
               h('span', null, pending.length === 0
-                ? '93 張卡全部練熟了，可以隨機抽考自己。'
-                : '今天沒有到期的複習卡，可以先認識沒練過的新公式。')),
+                ? (ALL_NODES.length + ' 張卡（公式與解法）全部練熟了，可以隨機抽考自己。')
+                : '今天沒有到期的複習卡，可以先認識沒練過的新公式或解法。')),
             pending.length > 0
               ? h('div', {className:'btnrow'},
                   h('button', {className:'btn primary', onClick:function(){ props.onStart('due'); }},
@@ -118,7 +118,7 @@ function LibraryScreen(props){
       if(f.attached[0] === 'yes' && !c.attachedInExam) return false;
       if(f.attached[0] === 'no' && c.attachedInExam) return false;
     }
-    if(f.state.indexOf('unmastered') >= 0 && isMastered(cp)) return false;
+    if(f.state.indexOf('unmastered') >= 0 && isMastered(cp, c)) return false;
     if(f.state.indexOf('weak') >= 0 && !(cp && cp.lapses > 0)) return false;
     return true;
   });
@@ -158,7 +158,7 @@ function LibraryScreen(props){
               h('div', {className:'rmeta'},
                 h('span', null, GRADES[c.grade] + '｜' + CATEGORIES[c.category]),
                 h('span', {style:{display:'inline-flex', alignItems:'center', gap:'4px'}},
-                  h(MasteryDot, {level:masteryLevel(cp)})),
+                  h(MasteryDot, {level:masteryLevel(cp, c)})),
                 c.diagramType ? h('span', null, '附圖') : null),
               covered ? null : h('div', {style:{marginTop:'6px'}},
                 h(M, {t:c.formula, cls:'flow'})));
@@ -176,7 +176,7 @@ function CardDetail(props){
       h(Tag, {tone:c.attachedInExam ? 'amber' : ''},
         c.attachedInExam ? '題本有附｜仍需熟到能立即辨認與使用' : '題本未附｜要自己記'),
       h(Tag, null, GRADES[c.grade]), h(Tag, null, CATEGORIES[c.category]),
-      h(Tag, {tone:isMastered(cp) ? 'teal' : ''}, MASTERY_LABEL[masteryLevel(cp)])),
+      h(Tag, {tone:isMastered(cp, c) ? 'teal' : ''}, MASTERY_LABEL[masteryLevel(cp, c)])),
     h('div', {className:'eyebrow'}, '公式／性質'),
     h(FormulaBox, {t:c.formula, hidden:props.covered}),
     props.covered ? h('div', {className:'btnrow'},
@@ -210,9 +210,11 @@ function CardDetail(props){
     })),
     h('p', {className:'small muted', style:{marginTop:'10px'}}, c.explanation),
     h('hr', {className:'rule'}),
-    h('div', {className:'eyebrow'}, '你的三項指標'),
+    h('div', {className:'eyebrow'}, '你的四項指標'),
     h('div', {className:'kv'}, h('span', null, '公式回想'),
       h('b', null, acc('recall') + '（' + cp.recall.c + '/' + cp.recall.t + '）')),
+    h('div', {className:'kv'}, h('span', null, '看題選公式'),
+      h('b', null, acc('select') + '（' + cp.select.c + '/' + cp.select.t + '）')),
     h('div', {className:'kv'}, h('span', null, '題型辨識'),
       h('b', null, acc('recognition') + '（' + cp.recognition.c + '/' + cp.recognition.t + '）')),
     h('div', {className:'kv'}, h('span', null, '公式套用'),
@@ -230,10 +232,13 @@ function CardDetail(props){
 /* ── 常用解法 ─────────────────────────────────────────────────────── */
 function MethodDetail(props){
   var m = props.m;
+  var mp = (props.progress.methods || {})[m.id] || emptyMethod();
   var st = useState(null), picked = st[0], setPicked = st[1];
   return h('div', null,
     h('div', {className:'tagrow', style:{marginBottom:'10px'}},
-      h(Tag, null, GRADES[m.grade]), h(Tag, null, CATEGORIES[m.category])),
+      h(Tag, null, GRADES[m.grade]), h(Tag, null, CATEGORIES[m.category]),
+      h(Tag, {tone:isMethodMastered(mp) ? 'teal' : ''},
+        MASTERY_LABEL[mp.seen === 0 ? 0 : (isMethodMastered(mp) ? 2 : 1)])),
     h('div', {className:'eyebrow'}, '① 題目會出現的線索'),
     h('ul', {className:'plain small'}, m.clues.map(function(c, i){
       return h('li', {key:i}, c);
@@ -281,19 +286,34 @@ function MethodDetail(props){
     picked !== null
       ? h('div', {className:'btnrow'},
           h('button', {className:'btn ghost', onClick:function(){ setPicked(null); }}, '再做一次'))
-      : null);
+      : null,
+    h('hr', {className:'rule'}),
+    h('div', {className:'eyebrow'}, '你的練習狀況'),
+    h('div', {className:'kv'}, h('span', null, '解法練習'),
+      h('b', null, (mp.method.t ? Math.round(mp.method.c / mp.method.t * 100) + '%' : '—') +
+        '（' + mp.method.c + '/' + mp.method.t + '）')),
+    h('div', {className:'kv'}, h('span', null, '不同日期答對'),
+      h('b', null, mp.successDays.length + ' 天')),
+    h('div', {className:'kv'}, h('span', null, '下次複習'),
+      h('b', null, mp.due || '尚未安排')),
+    h('div', {className:'btnrow'},
+      h('button', {className:'btn primary', onClick:function(){ props.onPractice(m); }},
+        '排進複習並練一題')));
 }
 function MethodsScreen(props){
   return h('div', null,
     h(SectionHead, {title:'常用解法', right:METHODS.length + ' 張'}),
     h('p', {className:'small muted'},
-      '每張解法卡都是固定七段：線索 → 數學關係 → 步驟 → 示範 → 常見錯誤 → 檢查方法 → 立即練習。'),
+      '每張解法卡都是固定七段：線索 → 數學關係 → 步驟 → 示範 → 常見錯誤 → 檢查方法 → 立即練習。' +
+      '解法卡和公式卡一樣會排進今日複習。'),
     h('div', {style:{marginTop:'10px'}}, METHODS.map(function(m, i){
+      var mp = (props.progress.methods || {})[m.id];
       return h('button', {key:m.id, className:'row',
         onClick:function(){ props.onOpen(m.id); }},
         h('div', {className:'rtop'},
           h('span', {className:'eyebrow', style:{minWidth:'22px'}}, String(i + 1).padStart(2, '0')),
-          h('span', {className:'rtitle'}, m.title)),
+          h('span', {className:'rtitle'}, m.title),
+          h(MasteryDot, {level:!mp || mp.seen === 0 ? 0 : (isMethodMastered(mp) ? 2 : 1)})),
         h('div', {className:'rmeta'},
           h('span', null, GRADES[m.grade] + '｜' + CATEGORIES[m.category]),
           m.diagramType ? h('span', null, '附圖') : null));
@@ -317,8 +337,8 @@ function KindMetric(props){
 }
 function StatsScreen(props){
   var p = props.progress;
-  var recall = kindStats(p, 'recall'), recog = kindStats(p, 'recognition'),
-      apply = kindStats(p, 'application');
+  var recall = kindStats(p, 'recall'), sel = kindStats(p, 'select'),
+      recog = kindStats(p, 'recognition'), apply = kindStats(p, 'application');
   var cats = categoryStats(p), reasons = reasonStats(p);
   var plan = scheduleList(p);
   var totals = sessionTotals(p);
@@ -328,8 +348,14 @@ function StatsScreen(props){
     h(SectionHead, {title:'四項熟練指標'}),
     h('div', {className:'block'},
       h(KindMetric, {label:'公式回想正確率', stat:recall}),
+      h(KindMetric, {label:'看題選公式正確率', stat:sel}),
       h(KindMetric, {label:'題型辨識正確率', stat:recog}),
-      h(KindMetric, {label:'公式套用正確率', stat:apply})),
+      h(KindMetric, {label:'公式套用正確率', stat:apply}),
+      sel.t >= 5 && sel.pct !== null && sel.pct < 60
+        ? h('p', {className:'small muted', style:{marginTop:'8px'}},
+            '「看題選公式」偏低代表公式背得起來、但看到題目想不到要用哪一條。' +
+            '先把這一項練上來，應用題會跟著變順。')
+        : null),
     h(SectionHead, {title:'各章節熟練度'}),
     h('div', {className:'block'}, cats.map(function(c){
       return h('div', {key:c.key, className:'metric'},
@@ -356,7 +382,8 @@ function StatsScreen(props){
             '依你的自評排出的下次複習時間，到期當天首頁就會提醒你。'),
           plan.slice(0, 10).map(function(it){
             return h('button', {key:it.card.id, className:'row',
-              onClick:function(){ props.onOpenCard(it.card.id); }},
+              onClick:function(){ METHOD_BY_ID[it.card.id] ? props.onOpenMethod(it.card.id)
+                                                           : props.onOpenCard(it.card.id); }},
               h('div', {className:'rtop'},
                 h('span', {className:'rtitle'}, it.card.title),
                 h('span', {className:'tag ' + (it.gap <= 1 ? 'red' : it.gap <= 7 ? 'amber' : 'teal')},
@@ -369,9 +396,10 @@ function StatsScreen(props){
     h(SectionHead, {title:'最近錯題', right:p.recentWrong.length + ' 筆'}),
     p.recentWrong.length
       ? h('div', null, p.recentWrong.slice(0, 8).map(function(w, i){
-          var c = CARD_BY_ID[w.id];
+          var c = NODE_BY_ID[w.id];
           return h('button', {key:i, className:'row',
-            onClick:function(){ props.onOpenCard(w.id); }},
+            onClick:function(){ METHOD_BY_ID[w.id] ? props.onOpenMethod(w.id)
+                                                   : props.onOpenCard(w.id); }},
             h('div', {className:'rtop'},
               h('span', {className:'rtitle'}, c.title),
               h('span', {className:'tag'}, KINDS[w.kind])),
@@ -398,7 +426,7 @@ function StatsScreen(props){
 
 /* ── 應用程式根元件 ───────────────────────────────────────────────── */
 function makeSlot(queue, idx, results){
-  var item = queue[idx], q = qFor(CARD_BY_ID[item.cardId], item.kind, item.qi);
+  var item = queue[idx], q = qFor(NODE_BY_ID[item.cardId], item.kind, item.qi);
   return {queue:queue, idx:idx, phase:'answer', hint:0,
     filled:q.type === 'blank' ? q.blanks.map(function(){ return null; }) : [],
     active:0, picked:null, num:'', reason:null, results:results || []};
@@ -448,11 +476,17 @@ function App(){
     setOpenCard(null); setOpenMethod(null);
     setSession(makeSlot(queue, 0, []));
   }
-  function practiceOne(card){
-    setOpenCard(null);
-    var k = pickKind(progressRef.current.cards[card.id]);
-    setSession(makeSlot([{cardId:card.id, kind:k,
-      qi:qIndex(progressRef.current.cards[card.id], k), retry:false}], 0, []));
+  function practiceOne(node){
+    setOpenCard(null); setOpenMethod(null);
+    if(METHOD_BY_ID[node.id]){
+      var mp = (progressRef.current.methods || {})[node.id];
+      setSession(makeSlot([{cardId:node.id, kind:'method',
+        qi:qIndex(mp, 'method'), retry:false}], 0, []));
+      return;
+    }
+    var k = pickKind(progressRef.current.cards[node.id], node);
+    setSession(makeSlot([{cardId:node.id, kind:k,
+      qi:qIndex(progressRef.current.cards[node.id], k), retry:false}], 0, []));
   }
 
   var cur = session && session.phase !== 'done' ? session.queue[session.idx] : null;
@@ -545,14 +579,14 @@ function App(){
       covered:covered, setCovered:setCovered, onOpenCard:setOpenCard,
       onPracticeList:function(list){ startSession('free', list); }});
   } else if(tab === 'methods'){
-    body = h(MethodsScreen, {onOpen:setOpenMethod});
+    body = h(MethodsScreen, {progress:progress, onOpen:setOpenMethod});
   } else {
-    body = h(StatsScreen, {progress:progress, onOpenCard:setOpenCard, storeMode:storeMode,
-      onReset:function(){ setDialog('reset1'); }});
+    body = h(StatsScreen, {progress:progress, onOpenCard:setOpenCard, onOpenMethod:setOpenMethod,
+      storeMode:storeMode, onReset:function(){ setDialog('reset1'); }});
   }
 
   var cardObj = openCard ? CARD_BY_ID[openCard] : null;
-  var methodObj = openMethod ? METHODS.filter(function(m){ return m.id === openMethod; })[0] : null;
+  var methodObj = openMethod ? METHOD_BY_ID[openMethod] : null;
 
   return h('div', {className:'app'},
     h('header', {className:'topbar'},
@@ -569,7 +603,7 @@ function App(){
       h(CardDetail, {card:cardObj, progress:progress, covered:covered,
         onReveal:function(){ setCovered(false); }, onPractice:practiceOne})) : null,
     methodObj ? h(Sheet, {title:methodObj.title, onClose:function(){ setOpenMethod(null); }},
-      h(MethodDetail, {m:methodObj})) : null,
+      h(MethodDetail, {m:methodObj, progress:progress, onPractice:practiceOne})) : null,
     dialog === 'reset1' ? h(Modal, {title:'要重設全部進度嗎？', onClose:function(){ setDialog(null); }},
       h('p', {className:'small'}, '這會清除這台裝置上所有的作答紀錄、熟練度與複習排程，而且無法復原。'),
       h('div', {className:'btnrow'},

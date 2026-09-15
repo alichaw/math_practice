@@ -221,6 +221,13 @@ ul.plain li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;he
   background:var(--sheet-2);transition:transform .18s ease,opacity .18s ease}
 .token:active{transform:translateY(1px)}
 .token.used{opacity:.32;pointer-events:none}
+/* 需要重複使用的積木，右上角標還要再用幾次 */
+.token{position:relative}
+.token .x2{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;line-height:17px;
+  border-radius:9px;background:var(--teal);color:#FBFEFD;font-family:"IBM Plex Mono",monospace;
+  font-size:10px;font-weight:600;text-align:center;padding:0 3px}
+:root[data-theme="dark"] .token .x2,
+:root:not([data-theme="light"]) .token .x2{color:#0B1F1A}
 .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
 .keypad button{min-height:44px;border:1px solid var(--rule);border-radius:4px;
   background:var(--sheet-2);font-family:"IBM Plex Mono",monospace;font-size:16px}
